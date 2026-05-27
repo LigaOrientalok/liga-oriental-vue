@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from './stores/authStore'
 import { useTorneoStore } from './stores/torneoStore'
 import LoginForm from './components/LoginForm.vue'
+import IntroOverlay from './components/IntroOverlay.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -64,6 +65,7 @@ onMounted(async () => {
   </template>
 
   <template v-else-if="!auth.isLoggedIn">
+    <IntroOverlay />
     <div class="login-wrapper">
       <div style="background:#161b22; border:2px solid #eab308; border-radius:12px; padding:40px; width:100%; max-width:400px; box-shadow:0 15px 50px rgba(0,0,0,0.8);">
         <LoginForm />
