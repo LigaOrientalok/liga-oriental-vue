@@ -84,7 +84,7 @@ onMounted(async () => { if (torneo.torneoActual) try { await loadData() } catch 
             <tr><th>#</th><th>Equipo</th><th>PJ</th><th>PTS</th></tr>
           </thead>
           <tbody>
-            <tr v-for="(e, i) in equiposOrdenados.slice(0, 6)" :key="e.id" style="border-bottom:1px solid var(--border);" :style="i < 3 ? 'font-weight:bold;' : ''">
+            <tr v-for="(e, i) in equiposOrdenados.slice(0, 6)" :key="e.id" :style="{ borderBottom: '1px solid var(--border)', fontWeight: i < 3 ? 'bold' : 'normal' }">
               <td style="padding:8px;">{{ i + 1 }}</td>
               <td style="padding:8px; text-align:left;">{{ e.nombre }}</td>
               <td style="padding:8px;">{{ e.pj || 0 }}</td>

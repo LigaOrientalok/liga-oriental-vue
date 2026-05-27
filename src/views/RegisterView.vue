@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { useTorneoStore } from '../stores/torneoStore'
 import { useToastStore } from '../stores/toastStore'
 import { db } from '../lib/db'
@@ -39,6 +39,8 @@ function comprimirImagen(base64, maxWidth = 300) {
   })
 }
 
+let fileReader = null
+
 function handleFileSelect(e) {
   const file = e.target.files?.[0]
   if (!file) return
@@ -48,11 +50,11 @@ function handleFileSelect(e) {
     e.target.value = ''
     return
   }
-  const reader = new FileReader()
-  reader.onload = async (ev) => {
+  fileReader = new FileReader()
+  fileReader.onload = async (ev) => {
     tempImgJugador.value = await comprimirImagen(ev.target.result)
   }
-  reader.readAsDataURL(file)
+  fileReader.readAsDataURL(file)
 }
 
 const debouncedUpdate = ref(null)
@@ -68,6 +70,11 @@ watch(ci, async (newCi) => {
     const j = jugadores.find(x => x.ci === newCi)
     previewPlayer.value = j || null
   }, 300)
+})
+
+onUnmounted(() => {
+  if (fileReader) fileReader.abort()
+  if (debouncedUpdate.value) clearTimeout(debouncedUpdate.value)
 })
 
 watch(nombre, () => {

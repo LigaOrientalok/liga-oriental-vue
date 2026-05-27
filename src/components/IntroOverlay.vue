@@ -1,24 +1,17 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 
 const visible = ref(true)
 
 function skip() {
   visible.value = false
 }
-
-onMounted(() => {
-  const video = document.getElementById('intro-video')
-  if (video) {
-    video.addEventListener('ended', skip)
-  }
-})
 </script>
 
 <template>
   <div v-if="visible" id="intro-overlay">
     <div class="intro-player">
-      <video autoplay muted loop playsinline id="intro-video">
+      <video autoplay muted playsinline id="intro-video" @ended="skip">
         <source src="/video/limol copa.mp4" type="video/mp4" />
       </video>
     </div>

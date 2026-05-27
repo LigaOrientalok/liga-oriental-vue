@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { supabase } from '../lib/supabase'
 
 export const useToastStore = defineStore('toast', {
   actions: {

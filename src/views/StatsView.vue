@@ -33,7 +33,7 @@ const equiposOrdenados = computed(() => {
   return [...equiposDia.value].sort((a, b) => (b.pts || 0) - (a.pts || 0))
 })
 
-const chartColors = ['#eab308', '#3b82f6', '#22c55e', '#ef4444', '#a855f7', '#f97316', '#06b6d4', '#ec4899']
+const chartColors = ['#eab308', '#3b82f6', '#22c55e', '#ef4444', '#a855f7', '#f97316', '#06b6d4', '#ec4899', '#14b8a6', '#f472b6', '#8b5cf6', '#84cc16', '#06b6d4', '#d946ef', '#0ea5e9', '#10b981']
 
 const goleadoresChartData = computed(() => ({
   labels: topGoleadores.value.map(j => j.nombre),

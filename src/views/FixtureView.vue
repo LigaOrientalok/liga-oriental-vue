@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { supabase } from '../lib/supabase'
 import { useTorneoStore } from '../stores/torneoStore'
 import { useAuthStore } from '../stores/authStore'
@@ -37,6 +37,8 @@ const golesE1 = ref([])
 const golesE2 = ref([])
 const tarjetasE1 = ref([])
 const tarjetasE2 = ref([])
+let golKey = 0
+let tarjetaKey = 0
 
 const equiposDia = computed(() => {
   if (!diaFiltro.value) return []
@@ -128,7 +130,7 @@ async function generarFixtureAuto() {
 
     const numE = equiposList.length
     for (let r = 0; r < numE - 1; r++) {
-      let fechaH = new Date(`2026-01-01T${fixHoraInicio.value}:00`)
+      let fechaH = new Date(); fechaH.setHours(...fixHoraInicio.value.split(':').map(Number), 0, 0)
       for (let p = 0; p < numE / 2; p++) {
         const local = equiposList[p]
         const visitante = equiposList[numE - 1 - p]
@@ -156,23 +158,25 @@ async function generarFixtureAuto() {
 
 // Result form
 function agregarGol(lado) {
-  if (lado === 'E1') golesE1.value.push(null)
-  else golesE2.value.push(null)
+  const item = { _key: ++golKey, jugador: null }
+  if (lado === 'E1') golesE1.value.push(item)
+  else golesE2.value.push(item)
 }
 
-function quitarGol(lado, idx) {
-  if (lado === 'E1') golesE1.value.splice(idx, 1)
-  else golesE2.value.splice(idx, 1)
+function quitarGol(lado, key) {
+  if (lado === 'E1') golesE1.value = golesE1.value.filter(g => g._key !== key)
+  else golesE2.value = golesE2.value.filter(g => g._key !== key)
 }
 
 function agregarTarjeta(lado) {
-  if (lado === 'E1') tarjetasE1.value.push({ jugador_id: null, tipo: 'A' })
-  else tarjetasE2.value.push({ jugador_id: null, tipo: 'A' })
+  const item = { _key: ++tarjetaKey, jugador_id: null, tipo: 'A' }
+  if (lado === 'E1') tarjetasE1.value.push(item)
+  else tarjetasE2.value.push(item)
 }
 
-function quitarTarjeta(lado, idx) {
-  if (lado === 'E1') tarjetasE1.value.splice(idx, 1)
-  else tarjetasE2.value.splice(idx, 1)
+function quitarTarjeta(lado, key) {
+  if (lado === 'E1') tarjetasE1.value = tarjetasE1.value.filter(t => t._key !== key)
+  else tarjetasE2.value = tarjetasE2.value.filter(t => t._key !== key)
 }
 
 async function cargarResultadoDeFixture(fixtureId) {
@@ -180,7 +184,7 @@ async function cargarResultadoDeFixture(fixtureId) {
   if (!match) return toast.error('Partido no encontrado')
 
   diaFiltro.value = match.dia_semana
-  await new Promise(r => setTimeout(r, 100))
+  await nextTick()
   resE1.value = match.equipo_local_id.toString()
   resE2.value = match.equipo_visitante_id.toString()
   resFiId.value = fixtureId
@@ -257,8 +261,8 @@ async function guardarResultado() {
       else deltas[pid][field] = (deltas[pid][field] || 0) + val
     }
 
-    golesE1.value.forEach(pid => { if (pid) addDelta(parseInt(pid), 'goles', 1) })
-    golesE2.value.forEach(pid => { if (pid) addDelta(parseInt(pid), 'goles', 1) })
+    golesE1.value.forEach(g => { const pid = g.jugador; if (pid) addDelta(parseInt(pid), 'goles', 1) })
+    golesE2.value.forEach(g => { const pid = g.jugador; if (pid) addDelta(parseInt(pid), 'goles', 1) })
 
     tarjetasE1.value.forEach(t => { if (t.jugador_id) addDelta(parseInt(t.jugador_id), t.tipo === 'A' ? 'amarillas' : 'rojas', 1) })
     tarjetasE2.value.forEach(t => { if (t.jugador_id) addDelta(parseInt(t.jugador_id), t.tipo === 'A' ? 'amarillas' : 'rojas', 1) })
@@ -279,8 +283,8 @@ async function guardarResultado() {
 
     // Create goal/card records
     const allGoalPromises = [
-      ...golesE1.value.filter(Boolean).map(pid => db.createGol(resId, parseInt(pid), e1Id, null)),
-      ...golesE2.value.filter(Boolean).map(pid => db.createGol(resId, parseInt(pid), e2Id, null))
+      ...golesE1.value.filter(g => g.jugador).map(g => db.createGol(resId, parseInt(g.jugador), e1Id, null)),
+      ...golesE2.value.filter(g => g.jugador).map(g => db.createGol(resId, parseInt(g.jugador), e2Id, null))
     ]
     const allCardPromises = [
       ...tarjetasE1.value.filter(t => t.jugador_id).map(t => db.createTarjeta(resId, parseInt(t.jugador_id), e1Id, t.tipo, null)),
@@ -522,23 +526,23 @@ onMounted(async () => {
       <div style="display:flex; gap:20px; margin-top:15px;">
         <div style="flex:1;">
           <label class="label-accent">Goleadores Local</label>
-          <div v-for="(gol, i) in golesE1" :key="i" style="display:flex; gap:5px; margin-bottom:5px;">
-            <select v-model="golesE1[i]" style="flex:1; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
-              <option value="">Seleccionar...</option>
+          <div v-for="gol in golesE1" :key="gol._key" style="display:flex; gap:5px; margin-bottom:5px;">
+            <select v-model="gol.jugador" style="flex:1; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+              <option :value="null">Seleccionar...</option>
               <option v-for="j in jugadoresE1" :key="j.id" :value="j.id">{{ j.nombre }}</option>
             </select>
-            <button @click="quitarGol('E1', i)" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">X</button>
+            <button @click="quitarGol('E1', gol._key)" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">X</button>
           </div>
           <button @click="agregarGol('E1')" class="btn-mini" style="background:#3b82f6; color:white;">+ Gol Local</button>
         </div>
         <div style="flex:1;">
           <label class="label-accent">Goleadores Visitante</label>
-          <div v-for="(gol, i) in golesE2" :key="i" style="display:flex; gap:5px; margin-bottom:5px;">
-            <select v-model="golesE2[i]" style="flex:1; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
-              <option value="">Seleccionar...</option>
+          <div v-for="gol in golesE2" :key="gol._key" style="display:flex; gap:5px; margin-bottom:5px;">
+            <select v-model="gol.jugador" style="flex:1; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+              <option :value="null">Seleccionar...</option>
               <option v-for="j in jugadoresE2" :key="j.id" :value="j.id">{{ j.nombre }}</option>
             </select>
-            <button @click="quitarGol('E2', i)" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">X</button>
+            <button @click="quitarGol('E2', gol._key)" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">X</button>
           </div>
           <button @click="agregarGol('E2')" class="btn-mini" style="background:#3b82f6; color:white;">+ Gol Visit</button>
         </div>
@@ -548,31 +552,31 @@ onMounted(async () => {
       <div style="display:flex; gap:20px; margin-top:15px;">
         <div style="flex:1;">
           <label class="label-accent">Tarjetas Local</label>
-          <div v-for="(t, i) in tarjetasE1" :key="i" style="display:flex; gap:5px; margin-bottom:5px;">
-            <select v-model="tarjetasE1[i].jugador_id" style="flex:1; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+          <div v-for="t in tarjetasE1" :key="t._key" style="display:flex; gap:5px; margin-bottom:5px;">
+            <select v-model="t.jugador_id" style="flex:1; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
               <option :value="null">Seleccionar...</option>
               <option v-for="j in jugadoresE1" :key="j.id" :value="j.id">{{ j.nombre }}</option>
             </select>
-            <select v-model="tarjetasE1[i].tipo" style="width:60px; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+            <select v-model="t.tipo" style="width:60px; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
               <option value="A">🟨</option>
               <option value="R">🟥</option>
             </select>
-            <button @click="quitarTarjeta('E1', i)" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">X</button>
+            <button @click="quitarTarjeta('E1', t._key)" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">X</button>
           </div>
           <button @click="agregarTarjeta('E1')" class="btn-mini" style="background:#f97316; color:white;">+ Tarjeta Local</button>
         </div>
         <div style="flex:1;">
           <label class="label-accent">Tarjetas Visitante</label>
-          <div v-for="(t, i) in tarjetasE2" :key="i" style="display:flex; gap:5px; margin-bottom:5px;">
-            <select v-model="tarjetasE2[i].jugador_id" style="flex:1; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+          <div v-for="t in tarjetasE2" :key="t._key" style="display:flex; gap:5px; margin-bottom:5px;">
+            <select v-model="t.jugador_id" style="flex:1; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
               <option :value="null">Seleccionar...</option>
               <option v-for="j in jugadoresE2" :key="j.id" :value="j.id">{{ j.nombre }}</option>
             </select>
-            <select v-model="tarjetasE2[i].tipo" style="width:60px; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+            <select v-model="t.tipo" style="width:60px; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
               <option value="A">🟨</option>
               <option value="R">🟥</option>
             </select>
-            <button @click="quitarTarjeta('E2', i)" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">X</button>
+            <button @click="quitarTarjeta('E2', t._key)" style="background:#ef4444; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer;">X</button>
           </div>
           <button @click="agregarTarjeta('E2')" class="btn-mini" style="background:#f97316; color:white;">+ Tarjeta Visit</button>
         </div>

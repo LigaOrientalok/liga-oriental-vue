@@ -40,7 +40,10 @@ async function handleRegister() {
 
 async function handleResetPassword() {
   if (!email.value) return mostrarError('Ingresá tu email primero')
+  loading.value = true
+  message.value = ''
   await auth.resetPassword(email.value)
+  loading.value = false
 }
 
 async function handleGoogleLogin() {
