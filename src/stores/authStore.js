@@ -13,7 +13,8 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     isAdmin: (state) => state.userData?.rol === 'admin',
     isArbitro: (state) => state.userData?.rol === 'arbitro',
-    isLoggedIn: (state) => !!state.session
+    isLoggedIn: (state) => !!state.session,
+    isApproved: (state) => state.userData?.estado === 'aprobado' || state.userData?.rol === 'admin'
   },
 
   actions: {
@@ -37,13 +38,13 @@ export const useAuthStore = defineStore('auth', {
     async loadUserData() {
       if (!this.user) return
       try {
-        const { data } = await supabase.from('usuarios').select('rol').eq('email', this.user.email).maybeSingle()
+        const { data } = await supabase.from('usuarios').select('*').eq('email', this.user.email).maybeSingle()
         this.userData = data
         if (!data) {
-          await supabase.from('usuarios').upsert({
-            id: this.user.id, email: this.user.email, rol: 'usuario', estado: 'aprobado', fecha_registro: new Date().toISOString()
-          })
-          this.userData = { rol: 'usuario' }
+          const { data: newUser } = await supabase.from('usuarios').upsert({
+            id: this.user.id, email: this.user.email, rol: 'usuario', estado: 'pendiente', fecha_registro: new Date().toISOString()
+          }).select().maybeSingle()
+          this.userData = newUser || { rol: 'usuario', estado: 'pendiente' }
         }
       } catch (e) {
         console.error('Error loading user data:', e)
