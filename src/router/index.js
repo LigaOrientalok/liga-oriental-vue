@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
-  { path: '/', redirect: '/registro' },
+  { path: '/', name: 'Inicio', component: () => import('../views/HomeView.vue') },
   { path: '/registro', name: 'Registro', component: () => import('../views/RegisterView.vue') },
   { path: '/tablas', name: 'Tablas', component: () => import('../views/StandingsView.vue') },
   { path: '/fixture', name: 'Fixture', component: () => import('../views/FixtureView.vue') },
@@ -11,7 +11,8 @@ const routes = [
   { path: '/equipos', name: 'Equipos', component: () => import('../views/TeamsView.vue') },
   { path: '/historial', name: 'Historial', component: () => import('../views/HistoryView.vue') },
   { path: '/misiones', name: 'Misiones', component: () => import('../views/MisionesView.vue') },
-  { path: '/admin', name: 'Admin', component: () => import('../views/AdminView.vue'), meta: { requiresAuth: true } }
+  { path: '/admin', name: 'Admin', component: () => import('../views/AdminView.vue'), meta: { requiresAuth: true } },
+  { path: '/jugador/:id', name: 'JugadorDetail', component: () => import('../views/PlayerDetailView.vue') }
 ]
 
 export default createRouter({

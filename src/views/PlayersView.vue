@@ -1,8 +1,10 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useTorneoStore } from '../stores/torneoStore'
 import { db } from '../lib/db'
 
+const router = useRouter()
 const torneo = useTorneoStore()
 
 const jugadores = ref([])
@@ -103,10 +105,18 @@ function mostrarDetalleJugador(j) {
         <div style="margin-top:10px; font-size:1.3rem; font-weight:bold; color:#eab308;">
           ${calcularRating(j)}
         </div>
+        <div style="margin-top:12px;">
+          <button onclick="document.querySelector('[data-ver-perfil]')?.click(); this.closest('div[style]').remove()" style="padding:8px 16px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.85rem; font-weight:bold; width:100%;">📊 Ver Perfil Completo</button>
+        </div>
       </div>
     </div>
   `
   document.body.appendChild(overlay)
+  const btn = document.createElement('button')
+  btn.style.display = 'none'
+  btn.setAttribute('data-ver-perfil', '')
+  btn.onclick = () => router.push(`/jugador/${j.id}`)
+  document.body.appendChild(btn)
 }
 
 async function loadData() {

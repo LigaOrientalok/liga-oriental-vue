@@ -157,6 +157,58 @@ export async function respaldarDatos() {
   }
 }
 
+export function restaurarRespaldo() {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.json'
+  input.onchange = async () => {
+    const file = input.files?.[0]
+    if (!file) return
+    const toast = useToastStore()
+    try {
+      const text = await file.text()
+      const data = JSON.parse(text)
+      if (!data.torneos || !Array.isArray(data.torneos)) {
+        toast.error('Formato de respaldo invalido')
+        return
+      }
+      toast.success(`Restaurando ${data.torneos.length} torneo(s)...`)
+      for (const t of data.torneos) {
+        if (t.torneo?.id) {
+          const { nombre, descripcion } = t.torneo
+          const nuevo = await db.createTorneo(nombre, descripcion)
+          if (!nuevo) continue
+          const torneoId = nuevo.id
+          const eqMap = {}
+          for (const eq of (t.equipos || [])) {
+            const created = await db.createEquipo(torneoId, eq.nombre, eq.dia_semana, eq.logo)
+            if (created) eqMap[eq.id] = created.id
+          }
+          for (const j of (t.jugadores || [])) {
+            const created = await db.createJugador(torneoId, j.ci, j.nombre, j.posicion, j.pierna, j.foto)
+            if (created && j.equipos?.length) {
+              for (const eqId of j.equipos) {
+                if (eqMap[eqId]) await db.vincularJugadorEquipo(created.id, eqMap[eqId])
+              }
+            }
+          }
+          for (const f of (t.fixture || [])) {
+            await db.createFixture(torneoId, f.dia_semana, f.fecha, f.hora, eqMap[f.equipo_local_id] || f.equipo_local_id, eqMap[f.equipo_visitante_id] || f.equipo_visitante_id)
+          }
+          for (const r of (t.resultados || [])) {
+            await db.createResultado(torneoId, r.fixture_id, eqMap[r.equipo_local_id] || r.equipo_local_id, eqMap[r.equipo_visitante_id] || r.equipo_visitante_id, r.goles_local, r.goles_visitante, r.mvp_id)
+          }
+        }
+      }
+      toast.success('Respaldo restaurado correctamente. Recarga la pagina.')
+      setTimeout(() => location.reload(), 1500)
+    } catch (e) {
+      toast.error('Error al restaurar: ' + e.message)
+    }
+  }
+  input.click()
+}
+
 export async function recomputarEstadisticas(torneoId) {
   const auth = useAuthStore()
   const toast = useToastStore()

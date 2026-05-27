@@ -3,19 +3,22 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from './stores/authStore'
 import { useTorneoStore } from './stores/torneoStore'
+import { useTheme } from './stores/themeStore'
 import LoginForm from './components/LoginForm.vue'
 import IntroOverlay from './components/IntroOverlay.vue'
-import { exportarJSON, exportarCSV, exportarPDF, respaldarDatos, recomputarEstadisticas } from './lib/export'
+import { exportarJSON, exportarCSV, exportarPDF, respaldarDatos, recomputarEstadisticas, restaurarRespaldo } from './lib/export'
 import { db } from './lib/db'
 
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
 const torneo = useTorneoStore()
+const { theme, toggleTheme } = useTheme()
 
 const navOpen = ref(false)
 
 const navItems = [
+  { path: '/', label: 'INICIO', icon: '🏠' },
   { path: '/registro', label: 'REGISTRO', icon: '' },
   { path: '/tablas', label: 'TABLAS', icon: '' },
   { path: '/fixture', label: 'FIXTURE', icon: '📅' },
@@ -65,6 +68,9 @@ async function handleRespaldo() {
 }
 async function handleRecomputar() {
   await recomputarEstadisticas(torneo.torneoActual)
+}
+function handleRestaurar() {
+  restaurarRespaldo()
 }
 
 function handleNotifications() {
@@ -139,8 +145,9 @@ onUnmounted(() => {
         <h1>LIGA <span style="color:#eab308;">ORIENTAL</span></h1>
         <div style="display:flex; gap:8px; align-items:center;">
           <button class="hamburger" @click="navOpen = !navOpen">☰</button>
-          <button @click="router.push('/admin')" style="background:#30363d; color:white; padding:10px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.85rem;">👤</button>
-          <button @click="handleNotifications" style="background:#30363d; color:white; padding:10px 14px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.85rem; position:relative;">🔔<span v-if="notifCount > 0" style="position:absolute;top:-4px;right:-4px;background:#ef4444;color:white;font-size:0.6rem;padding:2px 5px;border-radius:50%;font-weight:bold;">{{ notifCount }}</span></button>
+          <button @click="toggleTheme" style="background:var(--btn-bg); color:var(--text); padding:10px 14px; border:none; border-radius:6px; cursor:pointer; font-size:1rem;">{{ theme === 'dark' ? '☀️' : '🌙' }}</button>
+          <button @click="router.push('/admin')" style="background:var(--btn-bg); color:var(--text); padding:10px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.85rem;">👤</button>
+          <button @click="handleNotifications" style="background:var(--btn-bg); color:var(--text); padding:10px 14px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.85rem; position:relative;">🔔<span v-if="notifCount > 0" style="position:absolute;top:-4px;right:-4px;background:#ef4444;color:white;font-size:0.6rem;padding:2px 5px;border-radius:50%;font-weight:bold;">{{ notifCount }}</span></button>
           <button @click="logout" style="background:#ef4444; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">🚪 Cerrar Sesión</button>
         </div>
       </div>
@@ -151,6 +158,7 @@ onUnmounted(() => {
         </select>
         <button v-if="auth.isAdmin" @click="() => torneo.crearTorneo()" class="btn-mini" style="background:#3b82f6; color:white;">+ Nuevo Torneo</button>
         <button v-if="auth.isAdmin" @click="handleRespaldo" class="btn-mini" style="background:#22c55e; color:white;">💾 Respaldo</button>
+        <button v-if="auth.isAdmin" @click="handleRestaurar" class="btn-mini" style="background:#a855f7; color:white;">📂 Restaurar</button>
         <button v-if="auth.isAdmin" @click="handleRecomputar" class="btn-mini" style="background:#ef4444; color:white;">🔄 Recomputar</button>
         <button @click="handleJSON" class="btn-mini" style="background:#3b82f6; color:white;">📄 JSON</button>
         <button @click="handleCSV" class="btn-mini" style="background:#a855f7; color:white;">📊 CSV</button>
