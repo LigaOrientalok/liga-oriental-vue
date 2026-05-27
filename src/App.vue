@@ -41,8 +41,8 @@ function isActive(path) {
   return route.path === path
 }
 
-function logout() {
-  auth.logout()
+async function logout() {
+  await auth.logout()
   location.reload()
 }
 
