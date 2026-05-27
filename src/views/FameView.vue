@@ -157,13 +157,11 @@ onMounted(async () => {
           :key="j.id"
           class="ficha-ea"
           :class="getFrameClass(calcularNivel(calcularXP(j)), championTeams.length > 0 && (j.equipos || []).some(eId => championTeams.includes(eId)))"
-          :style="{ backgroundImage: `url(${j.foto || DEFAULT_AVATAR})` }"
+          :style="{ backgroundImage: getCardBg(calcularRating(j)) }"
           style="cursor:pointer;"
           @click="openPlayerDetail(j)"
         >
-          <div class="card-overlay" :style="{ backgroundImage: getCardBg(calcularRating(j)) }"></div>
-          <div class="card-gradient"></div>
-          <div class="card-badge">
+          <div class="card-badge" style="position:relative;z-index:2;">
             <div class="rating">{{ calcularRating(j) }}</div>
             <div class="pos">{{ j.posicion }}</div>
           </div>
@@ -177,17 +175,22 @@ onMounted(async () => {
             v-if="championTeams.length > 0 && (j.equipos || []).some(eId => championTeams.includes(eId))"
             style="position:absolute;top:18px;left:18px;font-size:1.8rem;z-index:5;filter:drop-shadow(0 0 6px rgba(234,179,8,0.8));"
           >👑</span>
-          <img
-            v-if="logoEq(j)"
-            :src="logoEq(j)"
-            style="position:absolute;bottom:80px;right:10px;width:32px;height:32px;border-radius:50%;border:2px solid #eab308;background:#0d1117;object-fit:cover;z-index:5;"
-            @error="$event.target.style.display='none'"
-          >
-          <div class="info-jugador-ea">
-            <h3>{{ j.nombre }}</h3>
-            <div class="stats-ea">
-              <span>⚽ {{ j.goles || 0 }}</span>
-              <span>⭐ {{ j.mvps || 0 }}</span>
+          <div class="foto-wrap">
+            <img :src="j.foto || DEFAULT_AVATAR">
+          </div>
+          <div class="info-foot">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <h3 style="margin:0;font-size:0.95rem;color:white;text-shadow:0 1px 4px rgba(0,0,0,0.8);">{{ j.nombre }}</h3>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <span style="font-size:0.75rem;color:#eab308;">⚽ {{ j.goles || 0 }}</span>
+                <span style="font-size:0.75rem;color:#f97316;">⭐ {{ j.mvps || 0 }}</span>
+                <img
+                  v-if="logoEq(j)"
+                  :src="logoEq(j)"
+                  style="width:24px;height:24px;border-radius:50%;border:1px solid #eab308;object-fit:cover;"
+                  @error="$event.target.style.display='none'"
+                >
+              </div>
             </div>
           </div>
         </div>
