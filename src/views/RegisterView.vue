@@ -162,7 +162,7 @@ const equipoLogo = computed(() => {
         <h2>Registro de Jugador</h2>
 
         <label class="label-accent">CI del Jugador:</label>
-        <input type="number" v-model="ci" placeholder="Cédula de Identidad" />
+        <input type="text" inputmode="numeric" v-model="ci" placeholder="Cédula de Identidad" />
 
         <label class="label-accent">Nombre:</label>
         <input type="text" v-model="nombre" placeholder="Nombre completo" />
@@ -206,11 +206,13 @@ const equipoLogo = computed(() => {
           <img
             :src="tempImgJugador"
             style="width:120px; height:120px; border-radius:50%; object-fit:cover; border:3px solid #eab308; margin-bottom:10px;"
+            @error="$event.target.style.display='none'"
           />
           <img
             v-if="equipoLogo"
             :src="equipoLogo"
             style="width:40px; height:40px; border-radius:50%; margin-bottom:5px;"
+            @error="$event.target.style.display='none'"
           />
           <h3 style="color:#eab308; margin:5px 0;">{{ previewName }}</h3>
           <div style="display:flex; justify-content:center; gap:10px; margin:5px 0;">

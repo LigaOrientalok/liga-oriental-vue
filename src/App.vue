@@ -51,7 +51,8 @@ let notifInterval = null
 
 async function logout() {
   await auth.logout()
-  location.reload()
+  torneo.$reset()
+  router.push('/')
 }
 
 function handleJSON() {

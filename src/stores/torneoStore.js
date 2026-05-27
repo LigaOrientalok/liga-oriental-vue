@@ -31,9 +31,14 @@ export const useTorneoStore = defineStore('torneo', {
       }
     },
 
-    selectTorneo(id) {
+    async selectTorneo(id) {
       this.torneoActual = parseInt(id)
-      this.loadData()
+      try {
+        await this.loadData()
+      } catch (e) {
+        const toast = useToastStore()
+        toast.error('Error al cargar datos del torneo')
+      }
     },
 
     async loadData() {

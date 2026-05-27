@@ -74,7 +74,7 @@ export const useAuthStore = defineStore('auth', {
       }
       if (data?.user) {
         await supabase.from('usuarios').upsert({
-          id: data.user.id, email: data.user.email, rol: 'usuario', estado: 'aprobado', fecha_registro: new Date().toISOString()
+          id: data.user.id, email: data.user.email, rol: 'usuario', estado: 'pendiente', fecha_registro: new Date().toISOString()
         })
       }
       toast.success('✅ Cuenta creada. Revisá tu email para confirmar.')

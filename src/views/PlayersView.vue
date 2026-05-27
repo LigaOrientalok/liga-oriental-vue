@@ -10,6 +10,7 @@ const torneo = useTorneoStore()
 const jugadores = ref([])
 const equipos = ref([])
 const loading = ref(false)
+const selectedPlayer = ref(null)
 
 const search = ref('')
 const posFilter = ref('')
@@ -68,55 +69,19 @@ function nombreEq(id) {
 }
 
 function mostrarDetalleJugador(j) {
-  const overlay = document.createElement('div')
-  overlay.style = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;justify-content:center;align-items:center;z-index:1000;'
-  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove() }
+  selectedPlayer.value = j
+}
 
-  const nivel = calcularNivel(calcularXP(j))
-  const nivelColor = getNivelColor(nivel)
+function cerrarDetalle() {
+  selectedPlayer.value = null
+}
 
-  overlay.innerHTML = `
-    <div style="background:#161b22; border:2px solid #eab308; border-radius:16px; padding:24px; max-width:400px; width:90%; position:relative;">
-      <button onclick="this.closest('div').remove()" style="position:absolute;top:10px;right:10px;background:#ef4444;color:white;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.2rem;">✕</button>
-      <div style="text-align:center;">
-        <div style="display:inline-block; position:relative;">
-          <img src="${j.foto || DEFAULT_AVATAR}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #eab308;margin-bottom:8px;">
-          <span style="position:absolute;bottom:5px;right:-4px;background:${nivelColor};color:black;padding:2px 8px;border-radius:10px;font-size:0.6rem;font-weight:bold;z-index:5;">Lv.${nivel}</span>
-        </div>
-        <h3 style="color:#eab308; margin:5px 0;">${j.nombre}</h3>
-        <div style="display:flex; justify-content:center; gap:8px; margin:5px 0;">
-          <span style="background:#3b82f6; padding:2px 10px; border-radius:4px; font-size:0.75rem;">${j.posicion || '-'}</span>
-          <span style="background:#30363d; padding:2px 10px; border-radius:4px; font-size:0.75rem;">${j.pierna === 'R' ? 'Diestro' : 'Zurdo'}</span>
-        </div>
-        <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-top:12px;">
-          <div style="background:#0d1117; border-radius:6px; padding:8px; text-align:center;">
-            <div style="font-size:1.2rem; font-weight:bold; color:#22c55e;">${j.goles || 0}</div>
-            <div style="font-size:0.6rem; color:#8b949e;">GOLES</div>
-          </div>
-          <div style="background:#0d1117; border-radius:6px; padding:8px; text-align:center;">
-            <div style="font-size:1.2rem; font-weight:bold; color:#3b82f6;">${j.pj || 0}</div>
-            <div style="font-size:0.6rem; color:#8b949e;">PJ</div>
-          </div>
-          <div style="background:#0d1117; border-radius:6px; padding:8px; text-align:center;">
-            <div style="font-size:1.2rem; font-weight:bold; color:#f97316;">${j.mvps || 0}</div>
-            <div style="font-size:0.6rem; color:#8b949e;">MVP</div>
-          </div>
-        </div>
-        <div style="margin-top:10px; font-size:1.3rem; font-weight:bold; color:#eab308;">
-          ${calcularRating(j)}
-        </div>
-        <div style="margin-top:12px;">
-          <button onclick="document.querySelector('[data-ver-perfil]')?.click(); this.closest('div[style]').remove()" style="padding:8px 16px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.85rem; font-weight:bold; width:100%;">📊 Ver Perfil Completo</button>
-        </div>
-      </div>
-    </div>
-  `
-  document.body.appendChild(overlay)
-  const btn = document.createElement('button')
-  btn.style.display = 'none'
-  btn.setAttribute('data-ver-perfil', '')
-  btn.onclick = () => router.push(`/jugador/${j.id}`)
-  document.body.appendChild(btn)
+function irAPerfil() {
+  if (selectedPlayer.value) {
+    const id = selectedPlayer.value.id
+    cerrarDetalle()
+    router.push(`/jugador/${id}`)
+  }
 }
 
 async function loadData() {
@@ -219,6 +184,50 @@ onMounted(async () => {
           <div style="text-align:center; min-width:32px;">
             <div style="font-size:0.95rem; font-weight:bold; color:#eab308;">{{ calcularRating(j) }}</div>
             <div style="font-size:0.6rem; color:#8b949e;">📊</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="selectedPlayer"
+      style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);display:flex;justify-content:center;align-items:center;z-index:1000;"
+      @click.self="cerrarDetalle"
+    >
+      <div style="background:#161b22; border:2px solid #eab308; border-radius:16px; padding:24px; max-width:400px; width:90%; position:relative;">
+        <button @click="cerrarDetalle" style="position:absolute;top:10px;right:10px;background:#ef4444;color:white;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.2rem;">✕</button>
+        <div style="text-align:center;">
+          <div style="display:inline-block; position:relative;">
+            <img :src="selectedPlayer.foto || DEFAULT_AVATAR" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #eab308;margin-bottom:8px;">
+            <span
+              style="position:absolute;bottom:5px;right:-4px;color:black;padding:2px 8px;border-radius:10px;font-size:0.6rem;font-weight:bold;z-index:5;"
+              :style="{ background: getNivelColor(calcularNivel(calcularXP(selectedPlayer))) }"
+            >Lv.{{ calcularNivel(calcularXP(selectedPlayer)) }}</span>
+          </div>
+          <h3 style="color:#eab308; margin:5px 0;">{{ selectedPlayer.nombre }}</h3>
+          <div style="display:flex; justify-content:center; gap:8px; margin:5px 0;">
+            <span style="background:#3b82f6; padding:2px 10px; border-radius:4px; font-size:0.75rem;">{{ selectedPlayer.posicion || '-' }}</span>
+            <span style="background:#30363d; padding:2px 10px; border-radius:4px; font-size:0.75rem;">{{ selectedPlayer.pierna === 'R' ? 'Diestro' : 'Zurdo' }}</span>
+          </div>
+          <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:8px; margin-top:12px;">
+            <div style="background:#0d1117; border-radius:6px; padding:8px; text-align:center;">
+              <div style="font-size:1.2rem; font-weight:bold; color:#22c55e;">{{ selectedPlayer.goles || 0 }}</div>
+              <div style="font-size:0.6rem; color:#8b949e;">GOLES</div>
+            </div>
+            <div style="background:#0d1117; border-radius:6px; padding:8px; text-align:center;">
+              <div style="font-size:1.2rem; font-weight:bold; color:#3b82f6;">{{ selectedPlayer.pj || 0 }}</div>
+              <div style="font-size:0.6rem; color:#8b949e;">PJ</div>
+            </div>
+            <div style="background:#0d1117; border-radius:6px; padding:8px; text-align:center;">
+              <div style="font-size:1.2rem; font-weight:bold; color:#f97316;">{{ selectedPlayer.mvps || 0 }}</div>
+              <div style="font-size:0.6rem; color:#8b949e;">MVP</div>
+            </div>
+          </div>
+          <div style="margin-top:10px; font-size:1.3rem; font-weight:bold; color:#eab308;">
+            {{ calcularRating(selectedPlayer) }}
+          </div>
+          <div style="margin-top:12px;">
+            <button @click="irAPerfil" style="padding:8px 16px; background:#3b82f6; color:white; border:none; border-radius:6px; cursor:pointer; font-size:0.85rem; font-weight:bold; width:100%;">📊 Ver Perfil Completo</button>
           </div>
         </div>
       </div>

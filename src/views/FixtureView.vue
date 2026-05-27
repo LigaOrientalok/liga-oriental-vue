@@ -101,7 +101,7 @@ async function loadData() {
 }
 
 watch(() => torneo.torneoActual, async () => {
-  if (torneo.torneoActual) await loadData()
+  if (torneo.torneoActual) try { await loadData() } catch (e) { console.error(e) }
 })
 
 watch(diaFiltro, () => {
@@ -407,7 +407,7 @@ function limpiarFormulario() {
 }
 
 onMounted(async () => {
-  if (torneo.torneoActual) await loadData()
+  if (torneo.torneoActual) try { await loadData() } catch (e) { console.error(e) }
 })
 </script>
 
