@@ -82,12 +82,11 @@ import plataCard from '../assets/cards/plata.png'
 import oroCard from '../assets/cards/oro.jpg'
 import diamanteCard from '../assets/cards/diamante.png'
 
-function getCardBg(nivel) {
-  if (nivel >= 12) return `url(${diamanteCard})`
-  if (nivel >= 9) return `url(${oroCard})`
-  if (nivel >= 6) return `url(${plataCard})`
-  if (nivel >= 3) return `url(${bronzeCard})`
-  return 'none'
+function getCardBg(rating) {
+  if (rating >= 89) return `url(${diamanteCard})`
+  if (rating >= 80) return `url(${oroCard})`
+  if (rating >= 70) return `url(${plataCard})`
+  return `url(${bronzeCard})`
 }
 
 function getFrameClass(nivel, esCampeon) {
@@ -158,7 +157,7 @@ onMounted(async () => {
           :key="j.id"
           class="ficha-ea"
           :class="getFrameClass(calcularNivel(calcularXP(j)), championTeams.length > 0 && (j.equipos || []).some(eId => championTeams.includes(eId)))"
-          :style="{ backgroundImage: getCardBg(calcularNivel(calcularXP(j))) }"
+          :style="{ backgroundImage: getCardBg(calcularRating(j)) }"
           style="cursor:pointer;"
           @click="openPlayerDetail(j)"
         >
