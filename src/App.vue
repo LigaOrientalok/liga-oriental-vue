@@ -115,7 +115,7 @@ onUnmounted(() => {
   <template v-else-if="!auth.isLoggedIn">
     <IntroOverlay />
     <div class="login-wrapper">
-      <div style="background:#161b22; border:2px solid #eab308; border-radius:12px; padding:40px; width:100%; max-width:400px; box-shadow:0 15px 50px rgba(0,0,0,0.8);">
+      <div style="background:var(--bg-card); border:2px solid #eab308; border-radius:12px; padding:40px; width:100%; max-width:400px; box-shadow:0 15px 50px rgba(0,0,0,0.8);">
         <LoginForm />
       </div>
     </div>
@@ -123,13 +123,13 @@ onUnmounted(() => {
 
   <template v-else-if="auth.isLoggedIn && !auth.isApproved">
     <div class="login-wrapper">
-      <div style="background:#161b22; border:2px solid #f97316; border-radius:16px; padding:50px 40px; width:100%; max-width:500px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.9);">
+      <div style="background:var(--bg-card); border:2px solid #f97316; border-radius:16px; padding:50px 40px; width:100%; max-width:500px; text-align:center; box-shadow:0 20px 60px rgba(0,0,0,0.9);">
         <h1 style="color:#f97316; margin-bottom:20px; font-size:3rem;">⏳</h1>
         <h2 style="color:#ffffff; margin-bottom:15px;">Acceso Pendiente</h2>
-        <p style="color:#b0bcc4; font-size:1rem; margin-bottom:20px;">
+        <p style="color:var(--text-accent); font-size:1rem; margin-bottom:20px;">
           Tu cuenta está en espera de aprobación del administrador.
         </p>
-        <p style="color:#b0bcc4; font-size:0.95rem; margin-bottom:30px;">
+        <p style="color:var(--text-accent); font-size:0.95rem; margin-bottom:30px;">
           Email: <strong style="color:#eab308;">{{ auth.user?.email }}</strong>
         </p>
         <p style="color:#a0aab4; font-size:0.9rem; margin-bottom:30px;">
@@ -154,7 +154,7 @@ onUnmounted(() => {
       </div>
 
       <div class="toolbar" v-if="torneo.torneos.length">
-        <select :value="torneo.torneoActual" @change="torneo.selectTorneo($event.target.value)" style="padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; flex:1; min-width:200px; margin:0;">
+        <select :value="torneo.torneoActual" @change="torneo.selectTorneo($event.target.value)" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border); flex:1; min-width:200px; margin:0;">
           <option v-for="t in torneo.torneos" :key="t.id" :value="t.id">{{ t.nombre }}</option>
         </select>
         <button v-if="auth.isAdmin" @click="() => torneo.crearTorneo()" class="btn-mini" style="background:#3b82f6; color:white;">+ Nuevo Torneo</button>

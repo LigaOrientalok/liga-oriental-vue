@@ -59,8 +59,8 @@ onMounted(async () => {
 
 <template>
   <section>
-    <div v-if="loading" class="box" style="text-align:center; color:#b0bcc4;">Cargando...</div>
-    <div v-else-if="equipos.length === 0" class="box" style="text-align:center; color:#8b949e; padding:40px;">
+    <div v-if="loading" class="box" style="text-align:center; color:var(--text-accent);">Cargando...</div>
+    <div v-else-if="equipos.length === 0" class="box" style="text-align:center; color:var(--text-muted); padding:40px;">
       No hay equipos en este torneo
     </div>
     <div v-else style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:15px;">
@@ -68,34 +68,34 @@ onMounted(async () => {
         v-for="e in equipos"
         :key="e.id"
         @click="mostrarDetalleEquipo(e.id)"
-        style="background:#0d1117; border-radius:10px; padding:18px; border:1px solid #30363d; cursor:pointer; transition:all 0.2s;"
+        style="background:var(--bg-input); border-radius:10px; padding:18px; border:1px solid var(--border); cursor:pointer; transition:all 0.2s;"
         @mouseover="$event.currentTarget.style.borderColor='#eab308'"
-        @mouseout="$event.currentTarget.style.borderColor='#30363d'"
+        @mouseout="$event.currentTarget.style.borderColor='var(--border)'"
       >
         <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
           <img
             v-if="e.logo"
             :src="e.logo"
-            style="width:48px; height:48px; border-radius:50%; object-fit:cover; background:#30363d;"
+            style="width:48px; height:48px; border-radius:50%; object-fit:cover; background:var(--border);"
             @error="$event.target.style.display='none'"
           />
-          <div v-else style="width:48px;height:48px;border-radius:50%;background:#30363d;display:flex;align-items:center;justify-content:center;color:#8b949e;font-size:1.2rem;">⚽</div>
+          <div v-else style="width:48px;height:48px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:1.2rem;">⚽</div>
           <div>
             <div style="color:white; font-weight:600; font-size:1rem;">{{ e.nombre }}</div>
-            <div style="color:#8b949e; font-size:0.8rem;">{{ e.dia_semana }} · {{ getJugadoresCount(e.id) }} jugadores</div>
+            <div style="color:var(--text-muted); font-size:0.8rem;">{{ e.dia_semana }} · {{ getJugadoresCount(e.id) }} jugadores</div>
           </div>
         </div>
         <div style="display:grid; grid-template-columns: repeat(6, 1fr); gap:6px; text-align:center;">
-          <div><div style="font-size:1.1rem; font-weight:bold; color:#3b82f6;">{{ e.pts || 0 }}</div><div style="font-size:0.6rem; color:#8b949e;">PTS</div></div>
-          <div><div style="font-size:1.1rem; font-weight:bold; color:white;">{{ e.pj || 0 }}</div><div style="font-size:0.6rem; color:#8b949e;">PJ</div></div>
-          <div><div style="font-size:1.1rem; font-weight:bold; color:#22c55e;">{{ e.v || 0 }}</div><div style="font-size:0.6rem; color:#8b949e;">V</div></div>
-          <div><div style="font-size:1.1rem; font-weight:bold; color:#eab308;">{{ e.e || 0 }}</div><div style="font-size:0.6rem; color:#8b949e;">E</div></div>
-          <div><div style="font-size:1.1rem; font-weight:bold; color:#ef4444;">{{ e.p || 0 }}</div><div style="font-size:0.6rem; color:#8b949e;">P</div></div>
+          <div><div style="font-size:1.1rem; font-weight:bold; color:#3b82f6;">{{ e.pts || 0 }}</div><div style="font-size:0.6rem; color:var(--text-muted);">PTS</div></div>
+          <div><div style="font-size:1.1rem; font-weight:bold; color:white;">{{ e.pj || 0 }}</div><div style="font-size:0.6rem; color:var(--text-muted);">PJ</div></div>
+          <div><div style="font-size:1.1rem; font-weight:bold; color:#22c55e;">{{ e.v || 0 }}</div><div style="font-size:0.6rem; color:var(--text-muted);">V</div></div>
+          <div><div style="font-size:1.1rem; font-weight:bold; color:#eab308;">{{ e.e || 0 }}</div><div style="font-size:0.6rem; color:var(--text-muted);">E</div></div>
+          <div><div style="font-size:1.1rem; font-weight:bold; color:#ef4444;">{{ e.p || 0 }}</div><div style="font-size:0.6rem; color:var(--text-muted);">P</div></div>
           <div>
             <div style="font-size:1.1rem; font-weight:bold;" :style="{ color: ((e.gf||0) - (e.gc||0)) >= 0 ? '#22c55e' : '#ef4444' }">
               {{ ((e.gf||0) - (e.gc||0)) >= 0 ? '+' : '' }}{{ (e.gf||0) - (e.gc||0) }}
             </div>
-            <div style="font-size:0.6rem; color:#8b949e;">DF</div>
+            <div style="font-size:0.6rem; color:var(--text-muted);">DF</div>
           </div>
         </div>
       </div>
@@ -106,25 +106,25 @@ onMounted(async () => {
       style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:flex;justify-content:center;align-items:center;z-index:1000;"
       @click.self="cerrarDetalle"
     >
-      <div style="background:#161b22; border:2px solid #eab308; border-radius:12px; padding:30px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto; position:relative;">
+      <div style="background:var(--bg-card); border:2px solid #eab308; border-radius:12px; padding:30px; max-width:500px; width:90%; max-height:80vh; overflow-y:auto; position:relative;">
         <button @click="cerrarDetalle" style="position:absolute;top:10px;right:10px;background:#ef4444;color:white;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.2rem;">✕</button>
         <div style="text-align:center; margin-bottom:20px;">
           <img
             v-if="selectedEquipo.logo"
             :src="selectedEquipo.logo"
-            style="width:60px;height:60px;border-radius:50%;object-fit:cover;background:#30363d;margin-bottom:10px;"
+            style="width:60px;height:60px;border-radius:50%;object-fit:cover;background:var(--border);margin-bottom:10px;"
             @error="$event.target.style.display='none'"
           >
           <h2 style="color:#eab308; margin:0;">{{ selectedEquipo.nombre }}</h2>
-          <p style="color:#8b949e; margin:5px 0;">{{ selectedEquipo.dia_semana }}</p>
-          <div style="display:flex; justify-content:center; gap:15px; margin:10px 0; color:#b0bcc4; font-size:0.9rem; flex-wrap:wrap;">
+          <p style="color:var(--text-muted); margin:5px 0;">{{ selectedEquipo.dia_semana }}</p>
+          <div style="display:flex; justify-content:center; gap:15px; margin:10px 0; color:var(--text-accent); font-size:0.9rem; flex-wrap:wrap;">
             <span>PJ: <b style="color:white;">{{ selectedEquipo.pj || 0 }}</b></span>
             <span>V: <b style="color:#22c55e;">{{ selectedEquipo.v || 0 }}</b></span>
             <span>E: <b style="color:#eab308;">{{ selectedEquipo.e || 0 }}</b></span>
             <span>P: <b style="color:#ef4444;">{{ selectedEquipo.p || 0 }}</b></span>
             <span>PTS: <b style="color:#3b82f6;">{{ selectedEquipo.pts || 0 }}</b></span>
           </div>
-          <div style="display:flex; justify-content:center; gap:15px; color:#b0bcc4; font-size:0.9rem;">
+          <div style="display:flex; justify-content:center; gap:15px; color:var(--text-accent); font-size:0.9rem;">
             <span>GF: <b style="color:white;">{{ selectedEquipo.gf || 0 }}</b></span>
             <span>GC: <b style="color:white;">{{ selectedEquipo.gc || 0 }}</b></span>
             <span>DF: <b :style="{ color: dif(selectedEquipo) >= 0 ? '#22c55e' : '#ef4444' }">{{ dif(selectedEquipo) >= 0 ? '+' : '' }}{{ dif(selectedEquipo) }}</b></span>
@@ -132,11 +132,11 @@ onMounted(async () => {
           </div>
         </div>
         <h3 style="color:#eab308; margin-bottom:10px;">Jugadores ({{ selectedEquipoJugadores.length }})</h3>
-        <p v-if="selectedEquipoJugadores.length === 0" style="color:#8b949e;">Sin jugadores</p>
+        <p v-if="selectedEquipoJugadores.length === 0" style="color:var(--text-muted);">Sin jugadores</p>
         <div
           v-for="j in selectedEquipoJugadores"
           :key="j.id"
-          style="display:flex; align-items:center; gap:10px; padding:8px; background:#0d1117; border-radius:6px; margin-bottom:5px;"
+          style="display:flex; align-items:center; gap:10px; padding:8px; background:var(--bg-input); border-radius:6px; margin-bottom:5px;"
         >
           <img
             :src="j.foto || DEFAULT_AVATAR"
@@ -145,10 +145,10 @@ onMounted(async () => {
           >
           <div style="flex:1;">
             <strong style="color:white;font-size:0.9rem;">{{ j.nombre }}</strong>
-            <span style="color:#8b949e;font-size:0.75rem;margin-left:8px;">{{ j.posicion || '' }}</span>
+            <span style="color:var(--text-muted);font-size:0.75rem;margin-left:8px;">{{ j.posicion || '' }}</span>
           </div>
-          <span style="color:#b0bcc4;font-size:0.8rem;">⚽ {{ j.goles || 0 }}</span>
-          <span style="color:#b0bcc4;font-size:0.8rem;">⭐ {{ j.mvps || 0 }}</span>
+          <span style="color:var(--text-accent);font-size:0.8rem;">⚽ {{ j.goles || 0 }}</span>
+          <span style="color:var(--text-accent);font-size:0.8rem;">⭐ {{ j.mvps || 0 }}</span>
         </div>
       </div>
     </div>

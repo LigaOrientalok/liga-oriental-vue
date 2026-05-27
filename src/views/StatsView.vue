@@ -4,6 +4,7 @@ import { Bar, Doughnut, Line } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js'
 import { useTorneoStore } from '../stores/torneoStore'
 import { db } from '../lib/db'
+import { calcularRating } from '../lib/playerStats'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, PointElement, LineElement, Title, Tooltip, Legend, Filler)
 
@@ -110,12 +111,6 @@ const evolucionChartOptions = {
   }
 }
 
-function calcularRating(j) {
-  let media = 60 + ((j.goles || 0) * 0.5) + ((j.pj || 0) * 0.2) + ((j.mvps || 0) * 2.0)
-  media -= ((j.amarillas || 0) * 0.5) + ((j.rojas || 0) * 2.0)
-  return Math.min(99, Math.max(10, Math.round(media)))
-}
-
 async function loadData() {
   if (!torneo.torneoActual) return
   loading.value = true
@@ -154,7 +149,7 @@ onMounted(async () => {
       </select>
     </div>
 
-    <div v-if="loading" class="box" style="text-align:center; color:#b0bcc4;">Cargando...</div>
+    <div v-if="loading" class="box" style="text-align:center; color:var(--text-accent);">Cargando...</div>
 
     <template v-else>
       <div class="box">
@@ -163,28 +158,28 @@ onMounted(async () => {
           <div>
             <h4 style="color:#eab308;">Top Goleadores</h4>
             <Bar v-if="topGoleadores.length" :data="goleadoresChartData" :options="goleadoresChartOptions" style="max-height:300px;" />
-            <p v-else style="color:#8b949e;">Sin datos</p>
+            <p v-else style="color:var(--text-muted);">Sin datos</p>
           </div>
           <div>
             <h4 style="color:#eab308;">Ranking Equipos</h4>
             <Doughnut v-if="equiposOrdenados.length" :data="equiposChartData" :options="equiposChartOptions" style="max-height:300px;" />
-            <p v-else style="color:#8b949e;">Sin datos</p>
+            <p v-else style="color:var(--text-muted);">Sin datos</p>
           </div>
           <div style="grid-column:1/-1;">
             <h4 style="color:#eab308;">Evolución</h4>
             <Line v-if="equiposDia.length" :data="evolucionChartData" :options="evolucionChartOptions" style="max-height:250px;" />
-            <p v-else style="color:#8b949e;">Sin datos</p>
+            <p v-else style="color:var(--text-muted);">Sin datos</p>
           </div>
         </div>
       </div>
 
       <div class="box">
         <h4 style="color:#eab308;">Tabla de Goleadores</h4>
-        <div v-if="jugadoresDia.length === 0" style="color:#8b949e;">Sin jugadores</div>
+        <div v-if="jugadoresDia.length === 0" style="color:var(--text-muted);">Sin jugadores</div>
         <div v-else class="overflow-table">
           <table style="width:100%; border-collapse:collapse;">
             <thead>
-              <tr style="background:#30363d;">
+              <tr style="background:var(--border);">
                 <th style="padding:10px; text-align:left; color:#eab308;">Jugador</th>
                 <th style="padding:10px; text-align:center; color:#eab308;">⚽ Goles</th>
                 <th style="padding:10px; text-align:center; color:#eab308;">🏃 PJ</th>
@@ -195,7 +190,7 @@ onMounted(async () => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(j, i) in jugadoresDia" :key="j.id" style="border-bottom:1px solid #30363d;" :style="i % 2 ? 'background:rgba(0,0,0,0.2);' : ''">
+              <tr v-for="(j, i) in jugadoresDia" :key="j.id" style="border-bottom:1px solid var(--border);" :style="i % 2 ? 'background:rgba(0,0,0,0.2);' : ''">
                 <td style="padding:10px;">{{ j.nombre }}</td>
                 <td style="padding:10px; text-align:center;">{{ j.goles || 0 }}</td>
                 <td style="padding:10px; text-align:center;">{{ j.pj || 0 }}</td>

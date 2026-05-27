@@ -14,6 +14,10 @@ export const useTorneoStore = defineStore('torneo', {
   }),
 
   getters: {
+    torneoNombre: (state) => {
+      const t = state.torneos.find(t => t.id === state.torneoActual)
+      return t?.nombre || ''
+    },
     equiposPorDia: (state) => {
       return (dia) => state.equipos
         .filter(e => e.dia_semana === dia)

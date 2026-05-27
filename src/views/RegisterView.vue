@@ -3,6 +3,7 @@ import { ref, computed, watch, onUnmounted } from 'vue'
 import { useTorneoStore } from '../stores/torneoStore'
 import { useToastStore } from '../stores/toastStore'
 import { db } from '../lib/db'
+import { calcularRating } from '../lib/playerStats'
 
 const torneo = useTorneoStore()
 const toast = useToastStore()
@@ -18,12 +19,6 @@ const foto = ref(null)
 const tempImgJugador = ref(DEFAULT_AVATAR)
 const saving = ref(false)
 const previewPlayer = ref(null)
-
-function calcularRating(j) {
-  let media = 60 + ((j.goles || 0) * 0.5) + ((j.pj || 0) * 0.2) + ((j.mvps || 0) * 2.0)
-  media -= ((j.amarillas || 0) * 0.5) + ((j.rojas || 0) * 2.0)
-  return Math.min(99, Math.max(10, Math.round(media)))
-}
 
 function comprimirImagen(base64, maxWidth = 300) {
   return new Promise(resolve => {
@@ -209,7 +204,7 @@ const equipoLogo = computed(() => {
 
       <div class="box" style="flex:0 0 320px; text-align:center;">
         <h3>Vista Previa</h3>
-        <div style="background:#0d1117; border-radius:12px; padding:20px; margin-top:10px;">
+        <div style="background:var(--bg-input); border-radius:12px; padding:20px; margin-top:10px;">
           <img
             :src="tempImgJugador"
             style="width:120px; height:120px; border-radius:50%; object-fit:cover; border:3px solid #eab308; margin-bottom:10px;"
@@ -224,9 +219,9 @@ const equipoLogo = computed(() => {
           <h3 style="color:#eab308; margin:5px 0;">{{ previewName }}</h3>
           <div style="display:flex; justify-content:center; gap:10px; margin:5px 0;">
             <span style="background:#3b82f6; padding:2px 10px; border-radius:4px; font-size:0.8rem;">{{ posicion }}</span>
-            <span style="background:#30363d; padding:2px 10px; border-radius:4px; font-size:0.8rem;">{{ pierna === 'R' ? 'Diestro' : 'Zurdo' }}</span>
+            <span style="background:var(--border); padding:2px 10px; border-radius:4px; font-size:0.8rem;">{{ pierna === 'R' ? 'Diestro' : 'Zurdo' }}</span>
           </div>
-          <div style="display:flex; justify-content:center; gap:20px; margin:10px 0; color:#b0bcc4; font-size:0.85rem;">
+          <div style="display:flex; justify-content:center; gap:20px; margin:10px 0; color:var(--text-accent); font-size:0.85rem;">
             <span>⚽ Goles: <b style="color:#22c55e;">{{ previewGoles }}</b></span>
             <span>🏃 PJ: <b style="color:#3b82f6;">{{ previewPJ }}</b></span>
           </div>

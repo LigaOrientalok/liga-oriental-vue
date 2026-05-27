@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/authStore'
 import { useTorneoStore } from '../stores/torneoStore'
 import { useToastStore } from '../stores/toastStore'
 import { db } from '../lib/db'
+import { calcularRating } from '../lib/playerStats'
 
 const auth = useAuthStore()
 const torneo = useTorneoStore()
@@ -19,6 +20,46 @@ const loading = ref(false)
 const saving = ref(false)
 
 const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect fill='%2330363d' width='150' height='150'/%3E%3Ctext fill='%238b949e' font-family='sans-serif' font-size='14' text-anchor='middle' x='75' y='85'%3ESin Foto%3C/text%3E%3C/svg%3E"
+
+const modalConfirm = ref(null)
+const modalPrompt = ref(null)
+const modalInput = ref('')
+const modalInput2 = ref('')
+
+function waitConfirm(msg) {
+  return new Promise(resolve => {
+    modalConfirm.value = { message: msg, resolve }
+  })
+}
+
+function waitPrompt(label1, val1, label2, val2) {
+  return new Promise(resolve => {
+    modalInput.value = val1 || ''
+    modalInput2.value = val2 || ''
+    modalPrompt.value = { label1, label2, resolve }
+  })
+}
+
+function onConfirm(ok) {
+  if (modalConfirm.value) {
+    modalConfirm.value.resolve(ok)
+    modalConfirm.value = null
+  }
+}
+
+function onPromptOk() {
+  if (modalPrompt.value) {
+    modalPrompt.value.resolve([modalInput.value, modalInput2.value])
+    modalPrompt.value = null
+  }
+}
+
+function onPromptCancel() {
+  if (modalPrompt.value) {
+    modalPrompt.value.resolve(null)
+    modalPrompt.value = null
+  }
+}
 
 const totalUsuarios = computed(() => usuarios.value.length)
 const aprobados = computed(() => usuarios.value.filter(u => u.estado === 'aprobado').length)
@@ -80,7 +121,7 @@ async function cambiarEstado(usuarioId, nuevoEstado) {
 }
 
 async function eliminarUsuario(usuarioId, email) {
-  if (!confirm(`¿Eliminar usuario ${email}?`)) return
+  if (!await waitConfirm(`¿Eliminar usuario ${email}?`)) return
   try {
     await soloAdmin()
     const { error } = await supabase.rpc('eliminar_usuario_auth', { user_id: usuarioId })
@@ -151,10 +192,10 @@ async function guardarEquipo() {
 }
 
 async function editarEquipo(eq) {
-  const nom = prompt('Nombre:', eq.nombre)
-  if (!nom || !nom.trim()) return
-  const dia = prompt('Día (Lunes, Miercoles, Jueves, Viernes, Sabado, Domingo):', eq.dia_semana)
-  if (!dia) return
+  const vals = await waitPrompt('Nombre:', eq.nombre, 'Día:', eq.dia_semana)
+  if (!vals) return
+  const [nom, dia] = vals
+  if (!nom || !nom.trim() || !dia) return
 
   saving.value = true
   try {
@@ -169,7 +210,7 @@ async function editarEquipo(eq) {
 }
 
 async function eliminarEquipoAdmin(id) {
-  if (!confirm('¿Eliminar este equipo?')) return
+  if (!await waitConfirm('¿Eliminar este equipo?')) return
   try {
     await db.deleteEquipo(id)
     toast.success('🗑️ Eliminado')
@@ -185,7 +226,7 @@ function getJugadoresEquipo(equipoId) {
 
 // Player management
 async function eliminarJugadorAdmin(j) {
-  if (!confirm(`¿Eliminar a ${j.nombre}?`)) return
+  if (!await waitConfirm(`¿Eliminar a ${j.nombre}?`)) return
   try {
     await supabase.from('jugador_equipo').delete().eq('jugador_id', j.id)
     await db.deleteJugador(j.id)
@@ -194,12 +235,6 @@ async function eliminarJugadorAdmin(j) {
   } catch (e) {
     toast.error('Error al eliminar jugador')
   }
-}
-
-function calcularRating(j) {
-  let media = 60 + ((j.goles || 0) * 0.5) + ((j.pj || 0) * 0.2) + ((j.mvps || 0) * 2.0)
-  media -= ((j.amarillas || 0) * 0.5) + ((j.rojas || 0) * 2.0)
-  return Math.min(99, Math.max(10, Math.round(media)))
 }
 
 function getEquiposNombres(j) {
@@ -228,7 +263,7 @@ async function crearTorneo() {
 }
 
 async function eliminarTorneo(id) {
-  if (!confirm('¿Eliminar este torneo y todos sus datos?')) return
+  if (!await waitConfirm('¿Eliminar este torneo y todos sus datos?')) return
   try {
     await db.deleteTorneo(id)
     toast.success('🗑️ Torneo eliminado')
@@ -256,12 +291,12 @@ watch(() => torneo.torneoActual, async () => {
       <h3>Panel ADMIN 🔐</h3>
       <p style="color:#22c55e;">✅ Sesión iniciada como <strong>{{ auth.user?.email }}</strong></p>
 
-      <div style="display:flex; gap:10px; margin-top:15px; flex-wrap:wrap; border-bottom:2px solid #30363d; padding-bottom:10px;">
+      <div style="display:flex; gap:10px; margin-top:15px; flex-wrap:wrap; border-bottom:2px solid var(--border); padding-bottom:10px;">
         <button
           v-for="tab in tabs"
           :key="tab.id"
           class="btn-mini"
-          :style="{ background: activeTab === tab.id ? '#eab308' : '#30363d', color: activeTab === tab.id ? 'black' : 'white' }"
+          :style="{ background: activeTab === tab.id ? '#eab308' : 'var(--border)', color: activeTab === tab.id ? 'black' : 'white' }"
           @click="activeTab = tab.id; if(tab.id === 'usuarios') cargarUsuarios(); if((tab.id === 'equipos' || tab.id === 'jugadores') && torneo.torneoActual) cargarEquipos()"
         >
           {{ tab.label }}
@@ -273,24 +308,24 @@ watch(() => torneo.torneoActual, async () => {
         <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-bottom:15px;">
           <div class="box" style="text-align:center; padding:10px;">
             <h3 style="color:#3b82f6; font-size:1.3rem; margin:0;">{{ totalUsuarios }}</h3>
-            <p style="color:#b0bcc4; margin:5px 0 0; font-size:0.8rem;">Total</p>
+            <p style="color:var(--text-accent); margin:5px 0 0; font-size:0.8rem;">Total</p>
           </div>
           <div class="box" style="text-align:center; padding:10px;">
             <h3 style="color:#22c55e; font-size:1.3rem; margin:0;">{{ aprobados }}</h3>
-            <p style="color:#b0bcc4; margin:5px 0 0; font-size:0.8rem;">Aprobados</p>
+            <p style="color:var(--text-accent); margin:5px 0 0; font-size:0.8rem;">Aprobados</p>
           </div>
           <div class="box" style="text-align:center; padding:10px;">
             <h3 style="color:#f97316; font-size:1.3rem; margin:0;">{{ pendientes }}</h3>
-            <p style="color:#b0bcc4; margin:5px 0 0; font-size:0.8rem;">Pendientes</p>
+            <p style="color:var(--text-accent); margin:5px 0 0; font-size:0.8rem;">Pendientes</p>
           </div>
         </div>
 
-        <div v-if="loading" style="text-align:center; padding:20px; color:#b0bcc4;">Cargando usuarios...</div>
+        <div v-if="loading" style="text-align:center; padding:20px; color:var(--text-accent);">Cargando usuarios...</div>
 
         <div v-else style="overflow-x:auto;">
           <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
             <thead>
-              <tr style="background:#30363d;">
+              <tr style="background:var(--border);">
                 <th style="padding:8px; color:#eab308; text-align:left;">Email</th>
                 <th style="padding:8px; color:#eab308; text-align:center;">Rol</th>
                 <th style="padding:8px; color:#eab308; text-align:center;">Estado</th>
@@ -298,13 +333,13 @@ watch(() => torneo.torneoActual, async () => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="u in usuarios" :key="u.id" style="border-bottom:1px solid #30363d;">
+              <tr v-for="u in usuarios" :key="u.id" style="border-bottom:1px solid var(--border);">
                 <td style="padding:8px;">{{ u.email }}</td>
                 <td style="padding:8px; text-align:center;">
                   <select
                     :value="u.rol"
                     @change="cambiarRol(u.id, $event.target.value)"
-                    style="padding:4px; background:#0d1117; color:white; border:1px solid #30363d; border-radius:4px; font-size:0.8rem;"
+                    style="padding:4px; background:var(--bg-input); color:white; border:1px solid var(--border); border-radius:4px; font-size:0.8rem;"
                   >
                     <option value="usuario">Usuario</option>
                     <option value="arbitro">Árbitro</option>
@@ -315,7 +350,7 @@ watch(() => torneo.torneoActual, async () => {
                   <select
                     :value="u.estado"
                     @change="cambiarEstado(u.id, $event.target.value)"
-                    style="padding:4px; background:#0d1117; color:white; border:1px solid #30363d; border-radius:4px; font-size:0.8rem;"
+                    style="padding:4px; background:var(--bg-input); color:white; border:1px solid var(--border); border-radius:4px; font-size:0.8rem;"
                   >
                     <option value="pendiente">Pendiente</option>
                     <option value="aprobado">Aprobado</option>
@@ -364,18 +399,18 @@ watch(() => torneo.torneoActual, async () => {
 
           <div class="box">
             <h3 style="color:#eab308; margin-bottom:15px;">📋 Equipos</h3>
-            <div v-if="loading" style="text-align:center; padding:20px; color:#b0bcc4;">Cargando...</div>
-            <div v-else-if="equipos.length === 0" style="color:#b0bcc4;">No hay equipos aún</div>
-            <div v-else v-for="eq in equipos" :key="eq.id" style="background:#0d1117; border-radius:8px; padding:15px; margin-bottom:10px; border-left:4px solid #eab308;">
+            <div v-if="loading" style="text-align:center; padding:20px; color:var(--text-accent);">Cargando...</div>
+            <div v-else-if="equipos.length === 0" style="color:var(--text-accent);">No hay equipos aún</div>
+            <div v-else v-for="eq in equipos" :key="eq.id" style="background:var(--bg-input); border-radius:8px; padding:15px; margin-bottom:10px; border-left:4px solid #eab308;">
               <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
                 <img
                   :src="eq.logo || ''"
-                  style="width:36px; height:36px; border-radius:50%; object-fit:cover; background:#30363d;"
+                  style="width:36px; height:36px; border-radius:50%; object-fit:cover; background:var(--border);"
                   @error="$event.target.style.display = 'none'"
                 />
                 <div>
                   <strong style="color:white; font-size:1rem;">{{ eq.nombre }}</strong>
-                  <span style="color:#8b949e; font-size:0.8rem; display:block;">
+                  <span style="color:var(--text-muted); font-size:0.8rem; display:block;">
                     {{ eq.dia_semana }} | PJ: {{ eq.pj || 0 }} | PTS: {{ eq.pts || 0 }}
                   </span>
                 </div>
@@ -386,12 +421,12 @@ watch(() => torneo.torneoActual, async () => {
                 <span
                   v-for="j in getJugadoresEquipo(eq.id)"
                   :key="j.id"
-                  style="background:#30363d; padding:2px 8px; border-radius:4px; font-size:0.8rem; color:#b0bcc4;"
+                  style="background:var(--border); padding:2px 8px; border-radius:4px; font-size:0.8rem; color:var(--text-accent);"
                 >
                   {{ j.nombre }}
                 </span>
               </div>
-              <p v-else style="color:#8b949e; font-size:0.8rem; margin:0;">Sin jugadores</p>
+              <p v-else style="color:var(--text-muted); font-size:0.8rem; margin:0;">Sin jugadores</p>
             </div>
           </div>
         </div>
@@ -406,11 +441,11 @@ watch(() => torneo.torneoActual, async () => {
           <h3 style="color:#eab308; margin-bottom:15px;">
             📋 Gestión de Jugadores ({{ jugadores.length }})
           </h3>
-          <div v-if="loading" style="text-align:center; padding:20px; color:#b0bcc4;">Cargando...</div>
-          <div v-else-if="jugadores.length === 0" style="color:#8b949e;">No hay jugadores registrados</div>
+          <div v-if="loading" style="text-align:center; padding:20px; color:var(--text-accent);">Cargando...</div>
+          <div v-else-if="jugadores.length === 0" style="color:var(--text-muted);">No hay jugadores registrados</div>
           <table v-else style="width:100%; border-collapse:collapse; font-size:0.85rem;">
             <thead>
-              <tr style="background:#30363d;">
+              <tr style="background:var(--border);">
                 <th style="padding:8px; color:#eab308;">Foto</th>
                 <th style="padding:8px; color:#eab308; text-align:left;">Nombre</th>
                 <th style="padding:8px; color:#eab308;">Pos</th>
@@ -423,7 +458,7 @@ watch(() => torneo.torneoActual, async () => {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="j in jugadores" :key="j.id" style="border-bottom:1px solid #30363d;">
+              <tr v-for="j in jugadores" :key="j.id" style="border-bottom:1px solid var(--border);">
                 <td style="padding:8px;">
                   <img :src="j.foto || DEFAULT_AVATAR" style="width:30px;height:30px;border-radius:50%;object-fit:cover;" />
                 </td>
@@ -460,10 +495,35 @@ watch(() => torneo.torneoActual, async () => {
 
         <div class="box">
           <h3 style="color:#eab308; margin-bottom:15px;">📋 Torneos Existentes</h3>
-          <div v-for="t in torneo.torneos" :key="t.id" style="display:flex; align-items:center; justify-content:space-between; background:#0d1117; padding:12px; border-radius:8px; margin-bottom:8px;">
+          <div v-for="t in torneo.torneos" :key="t.id" style="display:flex; align-items:center; justify-content:space-between; background:var(--bg-input); padding:12px; border-radius:8px; margin-bottom:8px;">
             <span style="color:white;">{{ t.nombre }}</span>
             <button @click="eliminarTorneo(t.id)" class="btn-mini" style="background:#ef4444; color:white;">🗑️</button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div v-if="modalConfirm" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:9999;" @click.self="onConfirm(false)">
+      <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:30px; max-width:400px; width:90%; text-align:center;">
+        <p style="color:var(--text); margin-bottom:20px;">{{ modalConfirm.message }}</p>
+        <div style="display:flex; gap:10px; justify-content:center;">
+          <button @click="onConfirm(true)" class="btn-mini" style="background:#ef4444; color:white; padding:10px 24px;">Sí</button>
+          <button @click="onConfirm(false)" class="btn-mini" style="background:var(--btn-bg); color:var(--text); padding:10px 24px;">No</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prompt Modal -->
+    <div v-if="modalPrompt" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:9999;" @click.self="onPromptCancel">
+      <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:30px; max-width:400px; width:90%;">
+        <label class="label-accent">{{ modalPrompt.label1 }}</label>
+        <input v-model="modalInput" type="text" />
+        <label class="label-accent">{{ modalPrompt.label2 }}</label>
+        <input v-model="modalInput2" type="text" />
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <button @click="onPromptOk" class="btn-main" style="flex:1;">OK</button>
+          <button @click="onPromptCancel" class="btn-mini" style="background:var(--btn-bg); color:var(--text); padding:14px 20px; flex:1;">Cancelar</button>
         </div>
       </div>
     </div>

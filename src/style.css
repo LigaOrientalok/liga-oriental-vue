@@ -308,6 +308,81 @@ input, select {
   .header-row h1 { font-size: 1.2rem; }
 }
 
+.card-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.card-badge .rating {
+  font-family: 'Oswald', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.card-badge .pos {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: white;
+  background: rgba(0,0,0,0.6);
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.perfil-ea {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--gold);
+  margin-top: 10px;
+  position: relative;
+  z-index: 2;
+}
+
+.foto-frame {
+  transition: border-color 0.3s;
+}
+
+.frame-campeon { border-color: #eab308; box-shadow: 0 0 20px rgba(234, 179, 8, 0.5); }
+.frame-diamante { border-color: #8b5cf6; box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
+.frame-oro { border-color: #eab308; box-shadow: 0 0 10px rgba(234, 179, 8, 0.3); }
+.frame-plata { border-color: #94a3b8; box-shadow: 0 0 8px rgba(148, 163, 184, 0.3); }
+.frame-bronce { border-color: #cd7f32; box-shadow: 0 0 8px rgba(205, 127, 50, 0.3); }
+
+.info-jugador-ea {
+  position: relative;
+  z-index: 2;
+  margin-top: 10px;
+}
+
+.info-jugador-ea h3 {
+  font-size: 0.95rem;
+  color: white;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stats-ea {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 5px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
 @keyframes slideIn {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }

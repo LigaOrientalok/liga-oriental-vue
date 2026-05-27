@@ -107,14 +107,8 @@ export async function exportarPDF(torneoId) {
     <p style="margin-top:40px;text-align:center;color:#666;font-size:12px;">Documento generado - Liga Oriental</p>
     </body></html>`
 
-    const iframe = document.createElement('iframe')
-    iframe.style.display = 'none'
-    document.body.appendChild(iframe)
-    iframe.contentDocument.write(html)
-    iframe.contentDocument.close()
-    setTimeout(() => iframe.contentWindow.print(), 100)
-    setTimeout(() => iframe.remove(), 3000)
-    toast.success('PDF generado')
+    downloadFile(html, `liga-oriental-${torneo?.nombre || 'datos'}-${Date.now()}.html`, 'text/html;charset=utf-8')
+    toast.success('HTML listo. Abrí el archivo y usá Ctrl+P para imprimir/PDF.')
   } catch (e) {
     toast.error('Error exportando PDF')
     console.error(e)

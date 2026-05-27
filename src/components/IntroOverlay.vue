@@ -6,12 +6,16 @@ const visible = ref(true)
 function skip() {
   visible.value = false
 }
+
+function handleVideoError() {
+  skip()
+}
 </script>
 
 <template>
   <div v-if="visible" id="intro-overlay">
     <div class="intro-player">
-      <video autoplay muted playsinline id="intro-video" @ended="skip">
+      <video autoplay muted playsinline id="intro-video" @ended="skip" @error="handleVideoError">
         <source src="/video/limol copa.mp4" type="video/mp4" />
       </video>
     </div>

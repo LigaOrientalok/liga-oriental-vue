@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useTorneoStore } from '../stores/torneoStore'
 import { supabase } from '../lib/supabase'
 import { db } from '../lib/db'
+import { calcularRating } from '../lib/playerStats'
 import { Line } from 'vue-chartjs'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js'
 
@@ -69,14 +70,7 @@ const chartOptions = {
   }
 }
 
-function calcularRating(j) {
-  if (!j) return 0
-  let media = 60 + ((j.goles || 0) * 0.5) + ((j.pj || 0) * 0.2) + ((j.mvps || 0) * 2.0)
-  media -= ((j.amarillas || 0) * 0.5) + ((j.rojas || 0) * 2.0)
-  return Math.min(99, Math.max(10, Math.round(media)))
-}
-
-async function loadData() {
+  async function loadData() {
   if (!torneo.torneoActual || !route.params.id) { loading.value = false; return }
   loading.value = true
   try {
@@ -105,7 +99,7 @@ onMounted(async () => { if (torneo.torneoActual && route.params.id) await loadDa
 
 <template>
   <section>
-    <div v-if="loading" class="box" style="text-align:center; color:#b0bcc4;">Cargando...</div>
+    <div v-if="loading" class="box" style="text-align:center; color:var(--text-accent);">Cargando...</div>
 
     <div v-else-if="!jugador" class="box" style="text-align:center; color:#ef4444; padding:30px;">Jugador no encontrado</div>
 
@@ -162,13 +156,13 @@ onMounted(async () => { if (torneo.torneoActual && route.params.id) await loadDa
         <h4 style="color:#eab308; margin-bottom:15px;">📈 Evolución de Goles</h4>
         <div style="height:250px;">
           <Line v-if="evolucionGoles.labels.length" :data="evolucionGoles" :options="chartOptions" />
-          <p v-else style="color:#8b949e; text-align:center;">Sin datos de evolución</p>
+          <p v-else style="color:var(--text-muted); text-align:center;">Sin datos de evolución</p>
         </div>
       </div>
 
       <div class="box">
         <h4 style="color:#eab308; margin-bottom:10px;">⚽ Detalle de Goles</h4>
-        <div v-if="allGoles.filter(g => g.jugador_id === jugador.id).length === 0" style="color:#8b949e;">Sin goles registrados</div>
+        <div v-if="allGoles.filter(g => g.jugador_id === jugador.id).length === 0" style="color:var(--text-muted);">Sin goles registrados</div>
         <div class="overflow-table" v-else>
           <table>
             <thead>

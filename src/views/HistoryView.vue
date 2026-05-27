@@ -61,43 +61,43 @@ onMounted(async () => {
 
 <template>
   <section>
-    <div v-if="loading" class="box" style="text-align:center; color:#b0bcc4; padding:40px;">Cargando historial...</div>
-    <div v-else-if="historial.length === 0" class="box" style="text-align:center; color:#8b949e; padding:40px;">
+    <div v-if="loading" class="box" style="text-align:center; color:var(--text-accent); padding:40px;">Cargando historial...</div>
+    <div v-else-if="historial.length === 0" class="box" style="text-align:center; color:var(--text-muted); padding:40px;">
       No hay torneos registrados
     </div>
     <div v-else style="display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:15px;">
       <div
         v-for="t in historial"
         :key="t.id"
-        style="background:#0d1117; border-radius:10px; padding:20px; border:1px solid #30363d; border-left:4px solid #eab308;"
+        style="background:var(--bg-input); border-radius:10px; padding:20px; border:1px solid var(--border); border-left:4px solid #eab308;"
       >
         <div style="margin-bottom:12px;">
           <h3 style="color:#eab308; margin:0; font-size:1rem;">{{ t.nombre }}</h3>
-          <p v-if="t.descripcion" style="color:#8b949e; margin:4px 0 0; font-size:0.8rem;">{{ t.descripcion }}</p>
+          <p v-if="t.descripcion" style="color:var(--text-muted); margin:4px 0 0; font-size:0.8rem;">{{ t.descripcion }}</p>
         </div>
         <div style="display:grid; gap:6px; font-size:0.85rem;">
           <div style="display:flex; justify-content:space-between; padding:4px 0;">
-            <span style="color:#8b949e;">📋 Equipos</span>
+            <span style="color:var(--text-muted);">📋 Equipos</span>
             <span style="color:white; font-weight:bold;">{{ t.equiposCount }}</span>
           </div>
           <div style="display:flex; justify-content:space-between; padding:4px 0;">
-            <span style="color:#8b949e;">👤 Jugadores</span>
+            <span style="color:var(--text-muted);">👤 Jugadores</span>
             <span style="color:white; font-weight:bold;">{{ t.jugadoresCount }}</span>
           </div>
           <div style="display:flex; justify-content:space-between; padding:4px 0;">
-            <span style="color:#8b949e;">🏆 Campeón</span>
+            <span style="color:var(--text-muted);">🏆 Campeón</span>
             <span v-if="t.champion" style="color:#eab308; font-weight:bold;">
               <img v-if="t.champion.logo" :src="t.champion.logo" style="width:18px;height:18px;border-radius:50%;vertical-align:middle;margin-right:4px;" @error="$event.target.style.display='none'">
               {{ t.champion.nombre }} ({{ t.champion.pts }} pts)
             </span>
-            <span v-else style="color:#8b949e;">—</span>
+            <span v-else style="color:var(--text-muted);">—</span>
           </div>
           <div v-if="t.topScorer && t.topScorer.goles > 0" style="display:flex; justify-content:space-between; padding:4px 0;">
-            <span style="color:#8b949e;">⚽ Goleador</span>
+            <span style="color:var(--text-muted);">⚽ Goleador</span>
             <span style="color:#22c55e; font-weight:bold;">{{ t.topScorer.nombre }} ({{ t.topScorer.goles }})</span>
           </div>
           <div v-if="t.topMvp && t.topMvp.mvps > 0" style="display:flex; justify-content:space-between; padding:4px 0;">
-            <span style="color:#8b949e;">⭐ MVP</span>
+            <span style="color:var(--text-muted);">⭐ MVP</span>
             <span style="color:#f97316; font-weight:bold;">{{ t.topMvp.nombre }} ({{ t.topMvp.mvps }})</span>
           </div>
         </div>

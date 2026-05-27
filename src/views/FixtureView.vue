@@ -17,6 +17,20 @@ const equipos = ref([])
 const jugadores = ref([])
 const loading = ref(false)
 const saving = ref(false)
+const modalConfirm = ref(null)
+
+function waitConfirm(msg) {
+  return new Promise(resolve => {
+    modalConfirm.value = { message: msg, resolve }
+  })
+}
+
+function onConfirm(ok) {
+  if (modalConfirm.value) {
+    modalConfirm.value.resolve(ok)
+    modalConfirm.value = null
+  }
+}
 
 // Fixture generation
 const fixDiaGen = ref('Lunes')
@@ -122,7 +136,7 @@ async function generarFixtureAuto() {
 
     const existingFixture = fixture.value.filter(f => f.dia_semana === fixDiaGen.value)
     if (existingFixture.length > 0) {
-      if (!confirm('Ya existe un fixture para este día. ¿Agregar más partidos?')) return
+      if (!await waitConfirm('Ya existe un fixture para este día. ¿Agregar más partidos?')) return
     }
 
     let equiposList = [...equiposDiaGen]
@@ -223,7 +237,7 @@ async function guardarResultado() {
     if (!e1 || !e2) return toast.error('Equipos no encontrados')
 
     if (resEditMode.value && resFiId.value) {
-      if (!confirm('¿Guardar cambios? Se reemplazará el resultado anterior.')) {
+      if (!await waitConfirm('¿Guardar cambios? Se reemplazará el resultado anterior.')) {
         saving.value = false
         return
       }
@@ -373,7 +387,7 @@ async function eliminarResultado(partidoFixtureId) {
 }
 
 async function eliminarPartido(id) {
-  if (!confirm('¿Eliminar este partido del fixture?')) return
+  if (!await waitConfirm('¿Eliminar este partido del fixture?')) return
   try {
     const { error } = await supabase.from('fixture').delete().eq('id', id)
     if (error) throw error
@@ -385,7 +399,7 @@ async function eliminarPartido(id) {
 }
 
 async function eliminarResultadoCompleto(fixtureId) {
-  if (!confirm('¿Eliminar este resultado? Se revertirán todas las estadísticas.')) return
+  if (!await waitConfirm('¿Eliminar este resultado? Se revertirán todas las estadísticas.')) return
   try {
     await eliminarResultado(fixtureId)
     toast.success('Resultado eliminado y estadísticas revertidas')
@@ -423,17 +437,17 @@ onMounted(async () => {
       <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
         <div>
           <label class="label-accent">Día:</label>
-          <select v-model="fixDiaGen" style="padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+          <select v-model="fixDiaGen" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
             <option>Lunes</option><option value="Miercoles">Miércoles</option><option>Jueves</option><option>Viernes</option><option value="Sabado">Sábado</option><option>Domingo</option>
           </select>
         </div>
         <div>
           <label class="label-accent">Hora inicio:</label>
-          <input type="time" v-model="fixHoraInicio" style="padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+          <input type="time" v-model="fixHoraInicio" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
         </div>
         <div>
           <label class="label-accent">Duración (min):</label>
-          <input type="number" v-model.number="fixDuracion" style="padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d; width:80px;">
+          <input type="number" v-model.number="fixDuracion" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border); width:80px;">
         </div>
         <button @click="generarFixtureAuto" class="btn-mini" style="background:#22c55e; color:white;" :disabled="saving">
           {{ saving ? '⏳' : 'Generar Fixture' }}
@@ -444,8 +458,8 @@ onMounted(async () => {
     <!-- Fixture Display -->
     <div class="box">
       <h3>📋 Fixture</h3>
-      <div v-if="loading" style="text-align:center; color:#b0bcc4; padding:20px;">Cargando...</div>
-      <div v-else-if="fixture.length === 0" style="color:#8b949e;">No hay partidos en el fixture</div>
+      <div v-if="loading" style="text-align:center; color:var(--text-accent); padding:20px;">Cargando...</div>
+      <div v-else-if="fixture.length === 0" style="color:var(--text-muted);">No hay partidos en el fixture</div>
       <div v-else>
         <div v-for="(matches, titulo) in fixtureAgrupado" :key="titulo" style="margin-bottom:20px;">
           <h3>{{ titulo }}</h3>
@@ -454,11 +468,11 @@ onMounted(async () => {
             :key="m.id"
             class="fixture-item"
             :class="resPorFixture[m.id] ? 'finalizado' : 'pendiente'"
-            style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:#0d1117; border-radius:8px; margin-bottom:10px;"
+            style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:var(--bg-input); border-radius:8px; margin-bottom:10px;"
           >
             <span style="font-weight:600; color:#eab308; min-width:50px;">{{ m.hora }}</span>
             <div style="flex:1; text-align:right; font-weight:600;">{{ getEqName(m.equipo_local_id) }}</div>
-            <div style="margin:0 15px; font-size:0.9rem; font-weight:700; color:#8b949e;">
+            <div style="margin:0 15px; font-size:0.9rem; font-weight:700; color:var(--text-muted);">
               <template v-if="resPorFixture[m.id]">
                 <span style="color:#22c55e;">{{ resPorFixture[m.id].goles_local }} - {{ resPorFixture[m.id].goles_visitante }}</span>
               </template>
@@ -486,36 +500,36 @@ onMounted(async () => {
       <div style="display:flex; gap:10px; flex-wrap:wrap;">
         <div>
           <label class="label-accent">Día:</label>
-          <select v-model="diaFiltro" style="padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+          <select v-model="diaFiltro" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
             <option value="">Seleccionar...</option>
             <option>Lunes</option><option value="Miercoles">Miércoles</option><option>Jueves</option><option>Viernes</option><option value="Sabado">Sábado</option><option>Domingo</option>
           </select>
         </div>
         <div>
           <label class="label-accent">Local:</label>
-          <select v-model="resE1" style="padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+          <select v-model="resE1" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
             <option value="">Seleccionar...</option>
             <option v-for="eq in equiposDia" :key="eq.id" :value="eq.id">{{ eq.nombre }}</option>
           </select>
         </div>
         <div>
           <label class="label-accent">Visitante:</label>
-          <select v-model="resE2" style="padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+          <select v-model="resE2" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
             <option value="">Seleccionar...</option>
             <option v-for="eq in equiposDia" :key="eq.id" :value="eq.id">{{ eq.nombre }}</option>
           </select>
         </div>
         <div>
           <label class="label-accent">Goles Local:</label>
-          <input type="number" v-model.number="resG1" min="0" style="width:60px; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+          <input type="number" v-model.number="resG1" min="0" style="width:60px; padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
         </div>
         <div>
           <label class="label-accent">Goles Visit:</label>
-          <input type="number" v-model.number="resG2" min="0" style="width:60px; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+          <input type="number" v-model.number="resG2" min="0" style="width:60px; padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
         </div>
         <div>
           <label class="label-accent">MVP:</label>
-          <select v-model="resMVP" style="padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+          <select v-model="resMVP" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
             <option value="">Sin MVP</option>
             <option v-for="j in jugadoresDelPartido" :key="j.id" :value="j.id">{{ j.nombre }}</option>
           </select>
@@ -527,7 +541,7 @@ onMounted(async () => {
         <div style="flex:1;">
           <label class="label-accent">Goleadores Local</label>
           <div v-for="gol in golesE1" :key="gol._key" style="display:flex; gap:5px; margin-bottom:5px;">
-            <select v-model="gol.jugador" style="flex:1; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+            <select v-model="gol.jugador" style="flex:1; padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
               <option :value="null">Seleccionar...</option>
               <option v-for="j in jugadoresE1" :key="j.id" :value="j.id">{{ j.nombre }}</option>
             </select>
@@ -538,7 +552,7 @@ onMounted(async () => {
         <div style="flex:1;">
           <label class="label-accent">Goleadores Visitante</label>
           <div v-for="gol in golesE2" :key="gol._key" style="display:flex; gap:5px; margin-bottom:5px;">
-            <select v-model="gol.jugador" style="flex:1; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+            <select v-model="gol.jugador" style="flex:1; padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
               <option :value="null">Seleccionar...</option>
               <option v-for="j in jugadoresE2" :key="j.id" :value="j.id">{{ j.nombre }}</option>
             </select>
@@ -553,11 +567,11 @@ onMounted(async () => {
         <div style="flex:1;">
           <label class="label-accent">Tarjetas Local</label>
           <div v-for="t in tarjetasE1" :key="t._key" style="display:flex; gap:5px; margin-bottom:5px;">
-            <select v-model="t.jugador_id" style="flex:1; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+            <select v-model="t.jugador_id" style="flex:1; padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
               <option :value="null">Seleccionar...</option>
               <option v-for="j in jugadoresE1" :key="j.id" :value="j.id">{{ j.nombre }}</option>
             </select>
-            <select v-model="t.tipo" style="width:60px; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+            <select v-model="t.tipo" style="width:60px; padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
               <option value="A">🟨</option>
               <option value="R">🟥</option>
             </select>
@@ -568,11 +582,11 @@ onMounted(async () => {
         <div style="flex:1;">
           <label class="label-accent">Tarjetas Visitante</label>
           <div v-for="t in tarjetasE2" :key="t._key" style="display:flex; gap:5px; margin-bottom:5px;">
-            <select v-model="t.jugador_id" style="flex:1; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+            <select v-model="t.jugador_id" style="flex:1; padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
               <option :value="null">Seleccionar...</option>
               <option v-for="j in jugadoresE2" :key="j.id" :value="j.id">{{ j.nombre }}</option>
             </select>
-            <select v-model="t.tipo" style="width:60px; padding:8px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+            <select v-model="t.tipo" style="width:60px; padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
               <option value="A">🟨</option>
               <option value="R">🟥</option>
             </select>
@@ -585,6 +599,17 @@ onMounted(async () => {
       <button @click="guardarResultado" class="btn-main" style="margin-top:15px;" :disabled="saving">
         {{ saving ? '⏳ Guardando...' : '✅ GUARDAR RESULTADO' }}
       </button>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div v-if="modalConfirm" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:flex;justify-content:center;align-items:center;z-index:9999;" @click.self="onConfirm(false)">
+      <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:30px; max-width:400px; width:90%; text-align:center;">
+        <p style="color:var(--text); margin-bottom:20px;">{{ modalConfirm.message }}</p>
+        <div style="display:flex; gap:10px; justify-content:center;">
+          <button @click="onConfirm(true)" class="btn-mini" style="background:#ef4444; color:white; padding:10px 24px;">Sí</button>
+          <button @click="onConfirm(false)" class="btn-mini" style="background:var(--btn-bg); color:var(--text); padding:10px 24px;">No</button>
+        </div>
+      </div>
     </div>
   </section>
 </template>

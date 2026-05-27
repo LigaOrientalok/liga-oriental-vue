@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useTorneoStore } from '../stores/torneoStore'
 import { useAuthStore } from '../stores/authStore'
 import { db } from '../lib/db'
+import { calcularXP, calcularNivel, xpParaSiguienteNivel, getNivelColor, getNivelLabel, calcularRating, XP_PER_LEVEL } from '../lib/playerStats'
 
 const torneo = useTorneoStore()
 const auth = useAuthStore()
@@ -12,54 +13,6 @@ const jugadores = ref([])
 const loading = ref(false)
 const selectedPlayerId = ref(null)
 const playerData = ref(null)
-
-const XP_PER_LEVEL = 80
-
-function calcularXP(j) {
-  let xp = 0
-  xp += (j.goles || 0) * 10
-  xp += (j.pj || 0) * 5
-  xp += (j.mvps || 0) * 25
-  xp += (j.vallas_invictas || 0) * 15
-  xp += (j.hattricks || 0) * 40
-  xp += (j.dobletes || 0) * 20
-  xp += (j.pokers || 0) * 80
-  xp += (j.matches_con_gol || 0) * 5
-  xp += (j.wins || 0) * 8
-  xp += (j.clean_wins || 0) * 10
-  xp += (j.brace_mvp || 0) * 30
-  xp += (j.hattrick_mvp || 0) * 50
-  xp += (j.poker_mvp || 0) * 100
-  return xp
-}
-
-function calcularNivel(xp) { return Math.floor(Math.sqrt(xp / XP_PER_LEVEL)) + 1 }
-function xpParaSiguienteNivel(nivel) { return XP_PER_LEVEL * (nivel * nivel) }
-
-function getNivelColor(nivel) {
-  if (nivel >= 12) return '#8b5cf6'
-  if (nivel >= 9) return '#eab308'
-  if (nivel >= 6) return '#94a3b8'
-  if (nivel >= 3) return '#cd7f32'
-  return '#8b949e'
-}
-
-function getNivelLabel(nivel) {
-  if (nivel >= 12) return 'LEYENDA'
-  if (nivel >= 9) return 'ORO'
-  if (nivel >= 6) return 'PLATA'
-  if (nivel >= 3) return 'BRONCE'
-  return 'PRINCIPIANTE'
-}
-
-function calcularRating(j) {
-  const xp = calcularXP(j)
-  const nivel = calcularNivel(xp)
-  let media = 60 + (j.goles || 0) * 0.5 + (j.pj || 0) * 0.2 + ((j.mvps || 0) * 2.0)
-  media -= ((j.amarillas || 0) * 0.5) + ((j.rojas || 0) * 2.0)
-  media += nivel * 0.5
-  return Math.min(99, Math.max(10, Math.round(media)))
-}
 
 const MISIONES = [
   { id: 'first_match', label: 'Primer Partido', icon: '📋', xp: 10, tipo: 'general', check: (j, ctx) => (j.pj || 0) >= 1 },
@@ -303,18 +256,18 @@ onMounted(async () => { if (torneo.torneoActual) try { await loadData() } catch 
 
 <template>
   <section>
-    <div v-if="loading" class="box" style="text-align:center; color:#b0bcc4;">Cargando...</div>
+    <div v-if="loading" class="box" style="text-align:center; color:var(--text-accent);">Cargando...</div>
     <div v-else>
       <div class="box">
         <h3>🎯 Misiones</h3>
         <label class="label-accent">Seleccionar Jugador:</label>
-        <select v-model="selectedPlayerId" style="padding:10px; border-radius:6px; background:#0d1117; color:white; border:1px solid #30363d;">
+        <select v-model="selectedPlayerId" style="padding:10px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
           <option :value="null">Seleccionar...</option>
           <option v-for="j in jugadores" :key="j.id" :value="j.id">{{ j.nombre }} {{ j.posicion === 'POR' ? '🧤' : '⚽' }}</option>
         </select>
       </div>
 
-      <div v-if="!selectedPlayer" class="box" style="text-align:center; color:#8b949e; padding:30px;">Seleccioná un jugador para ver sus misiones</div>
+      <div v-if="!selectedPlayer" class="box" style="text-align:center; color:var(--text-muted); padding:30px;">Seleccioná un jugador para ver sus misiones</div>
 
       <template v-else-if="playerData">
         <div class="box">
@@ -343,7 +296,7 @@ onMounted(async () => { if (torneo.torneoActual) try { await loadData() } catch 
                 background: 'linear-gradient(90deg, ' + getNivelColor(calcularNivel(calcularXP(playerData.jugador))) + ', #eab308)' }"
               ></div>
             </div>
-            <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#8b949e; margin-top:4px;">
+            <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-top:4px;">
               <span>{{ calcularXP(playerData.jugador) }} XP</span>
               <span>Sig. nivel: {{ xpParaSiguienteNivel(calcularNivel(calcularXP(playerData.jugador))) }} XP</span>
             </div>
@@ -353,15 +306,15 @@ onMounted(async () => { if (torneo.torneoActual) try { await loadData() } catch 
         <div class="box">
           <h4 style="color:#eab308; margin:0 0 10px 0;">
             🎯 Misiones ({{ completedMissions.length }}/{{ missions.length }})
-            <span style="font-size:0.8rem; color:#8b949e; margin-left:10px;">+{{ totalMissionXP }} XP de misiones</span>
+            <span style="font-size:0.8rem; color:var(--text-muted); margin-left:10px;">+{{ totalMissionXP }} XP de misiones</span>
           </h4>
           <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap:8px;">
             <div v-for="m in missions" :key="m.id"
               style="display:flex; align-items:center; gap:8px; padding:10px; border-radius:8px; font-size:0.85rem;"
               :style="{ background: m.completada ? '#22c55e22' : '#21262d', opacity: m.completada ? 1 : 0.5 }">
               <span style="font-size:1.2rem;">{{ m.icon }}</span>
-              <span style="flex:1;" :style="{ color: m.completada ? '#22c55e' : '#8b949e' }">{{ m.label }}</span>
-              <span style="font-size:0.75rem; font-weight:bold;" :style="{ color: m.completada ? '#22c55e' : '#8b949e' }">
+              <span style="flex:1;" :style="{ color: m.completada ? '#22c55e' : 'var(--text-muted)' }">{{ m.label }}</span>
+              <span style="font-size:0.75rem; font-weight:bold;" :style="{ color: m.completada ? '#22c55e' : 'var(--text-muted)' }">
                 {{ m.completada ? `+${m.xp}XP` : '—' }}
               </span>
             </div>
@@ -369,7 +322,7 @@ onMounted(async () => { if (torneo.torneoActual) try { await loadData() } catch 
         </div>
       </template>
 
-      <div v-else-if="selectedPlayer" class="box" style="text-align:center; color:#8b949e; padding:30px;">Calculando misiones...</div>
+      <div v-else-if="selectedPlayer" class="box" style="text-align:center; color:var(--text-muted); padding:30px;">Calculando misiones...</div>
     </div>
   </section>
 </template>

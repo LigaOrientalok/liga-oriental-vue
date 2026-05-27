@@ -49,10 +49,14 @@ async function handleResetPassword() {
 async function handleGoogleLogin() {
   loading.value = true
   try {
-    await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: window.location.origin + window.location.pathname }
     })
+    if (error) {
+      mostrarError('Error al conectar con Google: ' + error.message)
+      loading.value = false
+    }
   } catch (e) {
     mostrarError('Error al conectar con Google')
     loading.value = false

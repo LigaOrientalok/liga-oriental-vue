@@ -58,9 +58,9 @@ onMounted(async () => { if (torneo.torneoActual) try { await loadData() } catch 
 </script>
 
 <template>
-  <div v-if="loading" class="box" style="text-align:center; color:#b0bcc4;">Cargando...</div>
+  <div v-if="loading" class="box" style="text-align:center; color:var(--text-accent);">Cargando...</div>
 
-  <div v-else-if="!torneo.torneoActual" class="box" style="text-align:center; color:#8b949e; padding:40px;">
+  <div v-else-if="!torneo.torneoActual" class="box" style="text-align:center; color:var(--text-muted); padding:40px;">
     <h2 style="color:#eab308; margin-bottom:10px;">Bienvenido a Liga Oriental</h2>
     <p>Seleccioná o creá un torneo para empezar</p>
   </div>
@@ -78,7 +78,7 @@ onMounted(async () => { if (torneo.torneoActual) try { await loadData() } catch 
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
       <div class="box">
         <h4 style="color:#eab308; margin-bottom:10px;">📊 Tabla de Posiciones</h4>
-        <div v-if="equiposOrdenados.length === 0" style="color:#8b949e;">Sin equipos</div>
+        <div v-if="equiposOrdenados.length === 0" style="color:var(--text-muted);">Sin equipos</div>
         <table v-else>
           <thead>
             <tr><th>#</th><th>Equipo</th><th>PJ</th><th>PTS</th></tr>
@@ -99,7 +99,7 @@ onMounted(async () => { if (torneo.torneoActual) try { await loadData() } catch 
 
       <div class="box">
         <h4 style="color:#eab308; margin-bottom:10px;">⚽ Top Goleadores</h4>
-        <div v-if="topGoleadores.length === 0" style="color:#8b949e;">Sin datos</div>
+        <div v-if="topGoleadores.length === 0" style="color:var(--text-muted);">Sin datos</div>
         <div v-else>
           <div v-for="(j, i) in topGoleadores" :key="j.id" style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); cursor:pointer;" @click="router.push(`/jugador/${j.id}`)">
             <span><span style="color:var(--text-muted); margin-right:8px;">{{ i + 1 }}.</span> {{ j.nombre }}</span>
@@ -111,7 +111,7 @@ onMounted(async () => { if (torneo.torneoActual) try { await loadData() } catch 
 
     <div class="box">
       <h4 style="color:#eab308; margin-bottom:10px;">📅 Próximos Partidos</h4>
-      <div v-if="proximosPartidos.length === 0" style="color:#8b949e;">No hay partidos pendientes</div>
+      <div v-if="proximosPartidos.length === 0" style="color:var(--text-muted);">No hay partidos pendientes</div>
       <div v-for="f in proximosPartidos" :key="f.id" class="fixture-item pendiente" style="cursor:pointer;" @click="router.push('/fixture')">
         <div style="font-size:0.85rem;">
           <div style="font-weight:bold;">{{ f.local_nombre }} vs {{ f.visit_nombre }}</div>
