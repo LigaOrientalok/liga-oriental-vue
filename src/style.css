@@ -221,7 +221,6 @@ input, select {
 }
 
 .ficha-ea {
-  background: linear-gradient(180deg, #1a1f2e 0%, #0d1117 100%);
   background-size: cover;
   background-position: center;
   border: 2px solid var(--gold);
@@ -230,6 +229,30 @@ input, select {
   text-align: center;
   position: relative;
   overflow: hidden;
+}
+
+.card-overlay {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.45;
+  mix-blend-mode: overlay;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.card-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.85) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.ficha-ea > *:not(.card-overlay):not(.card-gradient) {
+  position: relative;
+  z-index: 2;
 }
 
 .ficha-ea .rating {

@@ -157,15 +157,16 @@ onMounted(async () => {
           :key="j.id"
           class="ficha-ea"
           :class="getFrameClass(calcularNivel(calcularXP(j)), championTeams.length > 0 && (j.equipos || []).some(eId => championTeams.includes(eId)))"
-          :style="{ backgroundImage: getCardBg(calcularRating(j)) }"
+          :style="{ backgroundImage: `url(${j.foto || DEFAULT_AVATAR})` }"
           style="cursor:pointer;"
           @click="openPlayerDetail(j)"
         >
+          <div class="card-overlay" :style="{ backgroundImage: getCardBg(calcularRating(j)) }"></div>
+          <div class="card-gradient"></div>
           <div class="card-badge">
             <div class="rating">{{ calcularRating(j) }}</div>
             <div class="pos">{{ j.posicion }}</div>
           </div>
-          <img :src="j.foto || DEFAULT_AVATAR" class="perfil-ea foto-frame">
           <span
             style="position:absolute;top:20px;right:20px;color:black;padding:2px 8px;border-radius:10px;font-size:0.65rem;font-weight:bold;z-index:5;"
             :style="{ background: getNivelColor(calcularNivel(calcularXP(j))) }"
@@ -179,7 +180,7 @@ onMounted(async () => {
           <img
             v-if="logoEq(j)"
             :src="logoEq(j)"
-            style="position:absolute;bottom:80px;right:10px;width:32px;height:32px;border-radius:50%;border:2px solid #eab308;background:#0d1117;object-fit:cover;"
+            style="position:absolute;bottom:80px;right:10px;width:32px;height:32px;border-radius:50%;border:2px solid #eab308;background:#0d1117;object-fit:cover;z-index:5;"
             @error="$event.target.style.display='none'"
           >
           <div class="info-jugador-ea">
