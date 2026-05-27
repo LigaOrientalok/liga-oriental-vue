@@ -77,6 +77,19 @@ function logoEq(j) {
   return eq?.logo || ''
 }
 
+import bronzeCard from '../assets/cards/BRONZE.jpg'
+import plataCard from '../assets/cards/plata.png'
+import oroCard from '../assets/cards/oro.jpg'
+import diamanteCard from '../assets/cards/diamante.png'
+
+function getCardBg(nivel) {
+  if (nivel >= 12) return `url(${diamanteCard})`
+  if (nivel >= 9) return `url(${oroCard})`
+  if (nivel >= 6) return `url(${plataCard})`
+  if (nivel >= 3) return `url(${bronzeCard})`
+  return 'none'
+}
+
 function getFrameClass(nivel, esCampeon) {
   if (esCampeon) return 'frame-campeon'
   if (nivel >= 12) return 'frame-diamante'
@@ -145,6 +158,7 @@ onMounted(async () => {
           :key="j.id"
           class="ficha-ea"
           :class="getFrameClass(calcularNivel(calcularXP(j)), championTeams.length > 0 && (j.equipos || []).some(eId => championTeams.includes(eId)))"
+          :style="{ backgroundImage: getCardBg(calcularNivel(calcularXP(j))) }"
           style="cursor:pointer;"
           @click="openPlayerDetail(j)"
         >
