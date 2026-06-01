@@ -13,6 +13,8 @@ const fixture = ref([])
 const resultados = ref([])
 const loading = ref(true)
 
+const diasSemana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+
 const topGoleadores = computed(() => {
   return [...jugadores.value].sort((a, b) => (b.goles || 0) - (a.goles || 0)).slice(0, 5)
 })
@@ -27,13 +29,38 @@ const equipoMap = computed(() => {
   return m
 })
 
+const partidosPendientes = computed(() => {
+  return fixture.value.filter(f => !resultados.value.some(r => r.fixture_id === f.id))
+})
+
 const proximosPartidos = computed(() => {
-  const pendientes = fixture.value.filter(f => !resultados.value.some(r => r.fixture_id === f.id))
-  return pendientes.slice(0, 5).map(f => ({
+  return partidosPendientes.value.slice(0, 5).map(f => ({
     ...f,
     local_nombre: equipoMap.value[f.equipo_local_id] || 'Local',
     visit_nombre: equipoMap.value[f.equipo_visitante_id] || 'Visitante'
   }))
+})
+
+const diasConPartidos = computed(() => {
+  const dias = new Set()
+  partidosPendientes.value.forEach(f => {
+    if (f.dia_semana) dias.add(f.dia_semana)
+  })
+  return [...dias].sort((a, b) => diasSemana.indexOf(a) - diasSemana.indexOf(b))
+})
+
+const partidosHoy = computed(() => {
+  const hoy = new Date().toLocaleDateString('es-ES', { weekday: 'long' })
+  const diaCapitalized = hoy.charAt(0).toUpperCase() + hoy.slice(1).toLowerCase()
+  return partidosPendientes.value.filter(f => f.dia_semana === diaCapitalized).map(f => ({
+    ...f,
+    local_nombre: equipoMap.value[f.equipo_local_id] || 'Local',
+    visit_nombre: equipoMap.value[f.equipo_visitante_id] || 'Visitante'
+  }))
+})
+
+const equipoStats = computed(() => {
+  return equiposOrdenados.value.slice(0, 6)
 })
 
 async function loadData() {
@@ -75,16 +102,41 @@ onMounted(async () => { if (torneo.torneoActual) try { await loadData() } catch 
       </div>
     </div>
 
+    <!-- Días con partidos -->
+    <div v-if="diasConPartidos.length > 0" class="box" style="padding:12px;">
+      <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+        <span style="color:var(--text-muted); font-size:0.85rem;">📅 Días de juego:</span>
+        <span
+          v-for="d in diasConPartidos"
+          :key="d"
+          style="background:rgba(234,179,8,0.15); color:#eab308; padding:4px 14px; border-radius:20px; font-size:0.8rem; font-weight:600; border:1px solid rgba(234,179,8,0.3);"
+        >{{ d }}</span>
+      </div>
+    </div>
+
+    <!-- Partidos de hoy -->
+    <div v-if="partidosHoy.length > 0" class="box" style="border-left:4px solid #22c55e;">
+      <h4 style="color:#22c55e; margin-bottom:10px;">🔴 Partidos de Hoy</h4>
+      <div v-for="f in partidosHoy" :key="f.id" style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); cursor:pointer;" @click="router.push('/fixture')">
+        <div>
+          <span style="font-weight:600;">{{ f.local_nombre }}</span>
+          <span style="color:var(--text-muted); margin:0 10px;">vs</span>
+          <span style="font-weight:600;">{{ f.visit_nombre }}</span>
+        </div>
+        <span style="color:var(--text-muted); font-size:0.85rem;">{{ f.hora }}</span>
+      </div>
+    </div>
+
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
       <div class="box">
         <h4 style="color:#eab308; margin-bottom:10px;">📊 Tabla de Posiciones</h4>
-        <div v-if="equiposOrdenados.length === 0" style="color:var(--text-muted);">Sin equipos</div>
+        <div v-if="equipoStats.length === 0" style="color:var(--text-muted);">Sin equipos</div>
         <table v-else>
           <thead>
             <tr><th>#</th><th>Equipo</th><th>PJ</th><th>PTS</th></tr>
           </thead>
           <tbody>
-            <tr v-for="(e, i) in equiposOrdenados.slice(0, 6)" :key="e.id" :style="{ borderBottom: '1px solid var(--border)', fontWeight: i < 3 ? 'bold' : 'normal' }">
+            <tr v-for="(e, i) in equipoStats" :key="e.id" :style="{ borderBottom: '1px solid var(--border)', fontWeight: i < 3 ? 'bold' : 'normal' }">
               <td style="padding:8px;">{{ i + 1 }}</td>
               <td style="padding:8px; text-align:left;">{{ e.nombre }}</td>
               <td style="padding:8px;">{{ e.pj || 0 }}</td>
@@ -92,7 +144,7 @@ onMounted(async () => { if (torneo.torneoActual) try { await loadData() } catch 
             </tr>
           </tbody>
         </table>
-        <div v-if="equiposOrdenados.length > 6" style="text-align:center; margin-top:8px;">
+        <div v-if="equipoStats.length > 6" style="text-align:center; margin-top:8px;">
           <a href="#" @click.prevent="router.push('/tablas')" style="color:#3b82f6; font-size:0.85rem;">Ver tabla completa ({{ equiposOrdenados.length }} equipos)</a>
         </div>
       </div>

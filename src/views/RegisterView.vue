@@ -207,12 +207,14 @@ const equipoLogo = computed(() => {
         <div style="background:var(--bg-input); border-radius:12px; padding:20px; margin-top:10px;">
           <img
             :src="tempImgJugador"
+            loading="lazy"
             style="width:120px; height:120px; border-radius:50%; object-fit:cover; border:3px solid #eab308; margin-bottom:10px;"
             @error="$event.target.style.display='none'"
           />
           <img
             v-if="equipoLogo"
             :src="equipoLogo"
+            loading="lazy"
             style="width:40px; height:40px; border-radius:50%; margin-bottom:5px;"
             @error="$event.target.style.display='none'"
           />

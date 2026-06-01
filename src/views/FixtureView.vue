@@ -5,6 +5,7 @@ import { useTorneoStore } from '../stores/torneoStore'
 import { useAuthStore } from '../stores/authStore'
 import { useToastStore } from '../stores/toastStore'
 import { db } from '../lib/db'
+import { notificarResultado, pedirPermisoNotificaciones } from '../lib/notifications'
 
 const torneo = useTorneoStore()
 const auth = useAuthStore()
@@ -312,6 +313,7 @@ async function guardarResultado() {
       resEditMode.value = false
     }
 
+    notificarResultado(e1.nombre, e2.nombre, g1, g2)
     toast.success('¡Resultado guardado!')
     await loadData()
     limpiarFormulario()

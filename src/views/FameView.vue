@@ -106,7 +106,7 @@ onMounted(async () => {
             <div class="rating">{{ calcularRating(j) }}</div>
             <div class="pos">{{ j.posicion }}</div>
           </div>
-          <img :src="j.foto || DEFAULT_AVATAR" class="perfil-ea foto-frame">
+          <img :src="j.foto || DEFAULT_AVATAR" loading="lazy" class="perfil-ea foto-frame">
           <span
             style="position:absolute;top:20px;right:20px;color:black;padding:2px 8px;border-radius:10px;font-size:0.65rem;font-weight:bold;z-index:5;"
             :style="{ background: getNivelColor(calcularNivel(calcularXP(j))) }"
@@ -120,6 +120,7 @@ onMounted(async () => {
           <img
             v-if="logoEq(j)"
             :src="logoEq(j)"
+            loading="lazy"
             style="position:absolute;bottom:80px;right:10px;width:32px;height:32px;border-radius:50%;border:2px solid #eab308;background:var(--bg-input);object-fit:cover;"
             @error="$event.target.style.display='none'"
           >
@@ -145,7 +146,7 @@ onMounted(async () => {
 
         <div style="text-align:center; margin-bottom:20px;">
           <div style="display:inline-block; position:relative;">
-            <img :src="selectedPlayer.foto || DEFAULT_AVATAR" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid #eab308;margin-bottom:10px;">
+            <img :src="selectedPlayer.foto || DEFAULT_AVATAR" loading="lazy" style="width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid #eab308;margin-bottom:10px;">
             <span
               style="position:absolute;bottom:8px;right:-4px;color:black;padding:2px 8px;border-radius:10px;font-size:0.65rem;font-weight:bold;z-index:5;white-space:nowrap;"
               :style="{ background: getNivelColor(calcularNivel(calcularXP(selectedPlayer))) }"
@@ -162,7 +163,7 @@ onMounted(async () => {
               :key="eq.id"
               style="display:flex; align-items:center; gap:5px; background:var(--bg-input); padding:4px 12px; border-radius:20px; border:1px solid #30363d;"
             >
-              <img v-if="eq.logo" :src="eq.logo" style="width:20px;height:20px;border-radius:50%;object-fit:cover;">
+              <img v-if="eq.logo" :src="eq.logo" loading="lazy" style="width:20px;height:20px;border-radius:50%;object-fit:cover;">
               <span style="font-size:0.8rem; color:#b0bcc4;">{{ eq.nombre }}</span>
             </div>
           </div>

@@ -69,6 +69,7 @@ const tabs = [
   { id: 'usuarios', label: 'Usuarios' },
   { id: 'equipos', label: 'Equipos' },
   { id: 'jugadores', label: 'Jugadores' },
+  { id: 'sanciones', label: 'Sanciones' },
   { id: 'torneos', label: 'Torneos' },
 ]
 
@@ -130,6 +131,86 @@ async function eliminarUsuario(usuarioId, email) {
     await cargarUsuarios()
   } catch (e) {
     toast.error('Error al eliminar usuario: ' + e.message)
+  }
+}
+
+// Sanciones
+const sanciones = ref([])
+const loadingSanciones = ref(false)
+const sancionJugadorId = ref('')
+const sancionMotivo = ref('')
+const sancionTipo = ref('suspension')
+const sancionFechaInicio = ref('')
+const sancionFechaFin = ref('')
+
+const sancionJugadores = computed(() => {
+  return jugadores.value.filter(j => {
+    const yaSancionado = sanciones.value.some(s => s.jugador_id === j.id && s.activa)
+    return !yaSancionado
+  })
+})
+
+function getNombreJugador(id) {
+  const j = jugadores.value.find(x => x.id === id)
+  return j?.nombre || 'Desconocido'
+}
+
+async function cargarSanciones() {
+  if (!torneo.torneoActual) return
+  loadingSanciones.value = true
+  try {
+    sanciones.value = await db.getSanciones(torneo.torneoActual)
+    await cargarEquipos()
+  } finally {
+    loadingSanciones.value = false
+  }
+}
+
+async function guardarSancion() {
+  if (!torneo.torneoActual) return toast.error('Seleccioná un torneo')
+  if (!sancionJugadorId.value || !sancionMotivo.value.trim()) return toast.error('Completá jugador y motivo')
+  saving.value = true
+  try {
+    await db.createSancion(
+      torneo.torneoActual,
+      parseInt(sancionJugadorId.value),
+      sancionMotivo.value.trim(),
+      sancionTipo.value,
+      sancionFechaInicio.value || null,
+      sancionFechaFin.value || null
+    )
+    toast.success('✅ Sanción creada')
+    sancionJugadorId.value = ''
+    sancionMotivo.value = ''
+    sancionTipo.value = 'suspension'
+    sancionFechaInicio.value = ''
+    sancionFechaFin.value = ''
+    await cargarSanciones()
+  } catch (e) {
+    toast.error('Error al crear sanción')
+  } finally {
+    saving.value = false
+  }
+}
+
+async function toggleSancion(id, activa) {
+  try {
+    await db.updateSancion(id, { activa })
+    toast.success(activa ? '✅ Sanción reactivada' : '✅ Sanción cumplida')
+    await cargarSanciones()
+  } catch (e) {
+    toast.error('Error al actualizar sanción')
+  }
+}
+
+async function eliminarSancion(id) {
+  if (!await waitConfirm('¿Eliminar esta sanción?')) return
+  try {
+    await db.deleteSancion(id)
+    toast.success('🗑️ Sanción eliminada')
+    await cargarSanciones()
+  } catch (e) {
+    toast.error('Error al eliminar sanción')
   }
 }
 
@@ -277,11 +358,15 @@ onMounted(async () => {
   await cargarUsuarios()
   if (torneo.torneoActual) {
     await cargarEquipos()
+    await cargarSanciones()
   }
 })
 
 watch(() => torneo.torneoActual, async () => {
-  if (torneo.torneoActual) await cargarEquipos()
+  if (torneo.torneoActual) {
+    await cargarEquipos()
+    await cargarSanciones()
+  }
 })
 </script>
 
@@ -297,7 +382,7 @@ watch(() => torneo.torneoActual, async () => {
           :key="tab.id"
           class="btn-mini"
           :style="{ background: activeTab === tab.id ? '#eab308' : 'var(--border)', color: activeTab === tab.id ? 'black' : 'white' }"
-          @click="activeTab = tab.id; if(tab.id === 'usuarios') cargarUsuarios(); if((tab.id === 'equipos' || tab.id === 'jugadores') && torneo.torneoActual) cargarEquipos()"
+          @click="activeTab = tab.id; if(tab.id === 'usuarios') cargarUsuarios(); if((tab.id === 'equipos' || tab.id === 'jugadores') && torneo.torneoActual) cargarEquipos(); if(tab.id === 'sanciones' && torneo.torneoActual) cargarSanciones()"
         >
           {{ tab.label }}
         </button>
@@ -405,6 +490,7 @@ watch(() => torneo.torneoActual, async () => {
               <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
                 <img
                   :src="eq.logo || ''"
+                  loading="lazy"
                   style="width:36px; height:36px; border-radius:50%; object-fit:cover; background:var(--border);"
                   @error="$event.target.style.display = 'none'"
                 />
@@ -460,7 +546,7 @@ watch(() => torneo.torneoActual, async () => {
             <tbody>
               <tr v-for="j in jugadores" :key="j.id" style="border-bottom:1px solid var(--border);">
                 <td style="padding:8px;">
-                  <img :src="j.foto || DEFAULT_AVATAR" style="width:30px;height:30px;border-radius:50%;object-fit:cover;" />
+                  <img :src="j.foto || DEFAULT_AVATAR" loading="lazy" style="width:30px;height:30px;border-radius:50%;object-fit:cover;" />
                 </td>
                 <td style="padding:8px; text-align:left;">
                   <span style="color:white;">{{ j.nombre }}</span>
@@ -477,6 +563,65 @@ watch(() => torneo.torneoActual, async () => {
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <!-- SANCIONES TAB -->
+      <div v-if="activeTab === 'sanciones'" style="margin-top:15px;">
+        <div v-if="!torneo.torneoActual" style="color:#f97316; padding:10px;">
+          Seleccioná un torneo primero
+        </div>
+        <div v-else style="display:grid; grid-template-columns: 1fr 2fr; gap:20px;">
+          <div class="box">
+            <h3 style="color:#eab308; margin-bottom:15px;">➕ Nueva Sanción</h3>
+            <label class="label-accent">Jugador:</label>
+            <select v-model="sancionJugadorId" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
+              <option value="">Seleccionar...</option>
+              <option v-for="j in sancionJugadores" :key="j.id" :value="j.id">{{ j.nombre }}</option>
+            </select>
+            <label class="label-accent">Motivo:</label>
+            <input v-model="sancionMotivo" type="text" placeholder="Ej: Agresión, acumulación de tarjetas" />
+            <label class="label-accent">Tipo:</label>
+            <select v-model="sancionTipo" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
+              <option value="suspension">Suspensión</option>
+              <option value="amonestacion">Amonestación</option>
+            </select>
+            <label class="label-accent">Fecha inicio:</label>
+            <input v-model="sancionFechaInicio" type="date" />
+            <label class="label-accent">Fecha fin:</label>
+            <input v-model="sancionFechaFin" type="date" />
+            <button class="btn-main" @click="guardarSancion" :disabled="saving">
+              {{ saving ? '⏳ Guardando...' : '✅ CREAR SANCIÓN' }}
+            </button>
+          </div>
+
+          <div class="box">
+            <h3 style="color:#eab308; margin-bottom:15px;">
+              📋 Sanciones ({{ sanciones.length }})
+            </h3>
+            <div v-if="loadingSanciones" style="text-align:center; padding:20px; color:var(--text-accent);">Cargando...</div>
+            <div v-else-if="sanciones.length === 0" style="color:var(--text-muted); text-align:center; padding:20px;">No hay sanciones</div>
+            <div v-else v-for="s in sanciones" :key="s.id" style="background:var(--bg-input); border-radius:8px; padding:12px; margin-bottom:8px; border-left:4px solid;" :style="{ borderLeftColor: s.tipo === 'suspension' ? '#ef4444' : '#f97316' }">
+              <div style="display:flex; justify-content:space-between; align-items:start;">
+                <div>
+                  <strong style="color:white;">{{ getNombreJugador(s.jugador_id) }}</strong>
+                  <span
+                    style="display:inline-block; margin-left:8px; padding:2px 8px; border-radius:4px; font-size:0.7rem; font-weight:600; text-transform:uppercase;"
+                    :style="{ background: s.tipo === 'suspension' ? '#ef4444' : '#f97316', color: 'white' }"
+                  >{{ s.tipo === 'suspension' ? '🔴 Suspendido' : '🟡 Amonestado' }}</span>
+                  <span v-if="!s.activa" style="display:inline-block; margin-left:8px; padding:2px 8px; border-radius:4px; font-size:0.7rem; background:#22c55e; color:white;">✓ Cumplida</span>
+                </div>
+                <div style="display:flex; gap:5px;">
+                  <button v-if="s.activa" @click="toggleSancion(s.id, false)" class="btn-mini" style="background:#22c55e; color:white; padding:4px 8px; font-size:0.65rem;">✓</button>
+                  <button @click="eliminarSancion(s.id)" class="btn-mini" style="background:#ef4444; color:white; padding:4px 8px; font-size:0.65rem;">🗑️</button>
+                </div>
+              </div>
+              <p style="margin:6px 0 0; color:var(--text-accent); font-size:0.85rem;">{{ s.motivo }}</p>
+              <div style="margin-top:4px; font-size:0.75rem; color:var(--text-muted);">
+                {{ s.fecha_inicio ? new Date(s.fecha_inicio).toLocaleDateString('es-ES') : '-' }} → {{ s.fecha_fin ? new Date(s.fecha_fin).toLocaleDateString('es-ES') : 'indefinido' }}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useTorneoStore } from '../stores/torneoStore'
 import { db } from '../lib/db'
 
@@ -76,6 +76,7 @@ onMounted(async () => {
           <img
             v-if="e.logo"
             :src="e.logo"
+            loading="lazy"
             style="width:48px; height:48px; border-radius:50%; object-fit:cover; background:var(--border);"
             @error="$event.target.style.display='none'"
           />
@@ -112,6 +113,7 @@ onMounted(async () => {
           <img
             v-if="selectedEquipo.logo"
             :src="selectedEquipo.logo"
+            loading="lazy"
             style="width:60px;height:60px;border-radius:50%;object-fit:cover;background:var(--border);margin-bottom:10px;"
             @error="$event.target.style.display='none'"
           >
@@ -140,6 +142,7 @@ onMounted(async () => {
         >
           <img
             :src="j.foto || DEFAULT_AVATAR"
+            loading="lazy"
             style="width:32px;height:32px;border-radius:50%;object-fit:cover;"
             @error="$event.target.style.display='none'"
           >

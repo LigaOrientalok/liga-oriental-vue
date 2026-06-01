@@ -109,7 +109,7 @@ onMounted(async () => { if (torneo.torneoActual && route.params.id) await loadDa
       <div class="box">
         <div style="display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
           <div style="width:80px; height:80px; border-radius:50%; overflow:hidden; border:2px solid #eab308; flex-shrink:0;">
-            <img :src="jugador.foto || ''" style="width:100%; height:100%; object-fit:cover;" alt="" @error="$event.target.style.display='none'">
+            <img :src="jugador.foto || ''" loading="lazy" style="width:100%; height:100%; object-fit:cover;" alt="" @error="$event.target.style.display='none'">
           </div>
           <div style="flex:1;">
             <h2 style="color:#eab308; margin:0;">{{ jugador.nombre }}</h2>

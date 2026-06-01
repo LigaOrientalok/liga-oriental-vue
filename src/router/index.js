@@ -14,6 +14,8 @@ const routes = [
   { path: '/misiones', name: 'Misiones', component: () => import('../views/MisionesView.vue') },
   { path: '/admin', name: 'Admin', component: () => import('../views/AdminView.vue'), meta: { requiresAuth: true } },
   { path: '/jugador/:id', name: 'JugadorDetail', component: () => import('../views/PlayerDetailView.vue') },
+  { path: '/equipo/:id', name: 'TeamDetail', component: () => import('../views/TeamDetailView.vue') },
+  { path: '/ranking', name: 'Ranking', component: () => import('../views/RankingsView.vue') },
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 

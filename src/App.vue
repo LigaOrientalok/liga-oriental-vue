@@ -3,17 +3,18 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from './stores/authStore'
 import { useTorneoStore } from './stores/torneoStore'
-import { useTheme } from './stores/themeStore'
+import { useThemeStore } from './stores/themeStore'
 import LoginForm from './components/LoginForm.vue'
 import IntroOverlay from './components/IntroOverlay.vue'
 import { exportarJSON, exportarCSV, exportarPDF, respaldarDatos, recomputarEstadisticas, restaurarRespaldo } from './lib/export'
 import { db } from './lib/db'
+import { pedirPermisoNotificaciones } from './lib/notifications'
 
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
 const torneo = useTorneoStore()
-const { theme, toggleTheme } = useTheme()
+const themeStore = useThemeStore()
 
 const navOpen = ref(false)
 
@@ -28,6 +29,7 @@ const navItems = [
   { path: '/equipos', label: 'EQUIPOS', icon: '📋' },
   { path: '/historial', label: 'HISTORIAL', icon: '📜' },
   { path: '/misiones', label: 'MISIONES', icon: '🎯' },
+  { path: '/ranking', label: 'RANKING', icon: '📈' },
   { path: '/admin', label: 'ADMIN', icon: '⚙️' }
 ]
 
@@ -94,6 +96,7 @@ onMounted(async () => {
     await torneo.init()
     verificarNotificaciones()
     notifInterval = setInterval(verificarNotificaciones, 30000)
+    setTimeout(() => pedirPermisoNotificaciones(), 2000)
   }
 })
 
@@ -146,7 +149,7 @@ onUnmounted(() => {
         <h1>LIGA <span style="color:#eab308;">ORIENTAL</span></h1>
         <div style="display:flex; gap:8px; align-items:center;">
           <button class="hamburger" @click="navOpen = !navOpen" aria-label="Abrir menú de navegación">☰</button>
-          <button @click="toggleTheme" aria-label="Cambiar tema" style="background:var(--btn-bg); color:var(--text); padding:10px 14px; border:none; border-radius:6px; cursor:pointer; font-size:1rem;">{{ theme === 'dark' ? '☀️' : '🌙' }}</button>
+          <button @click="themeStore.toggleTheme()" aria-label="Cambiar tema" style="background:var(--btn-bg); color:var(--text); padding:10px 14px; border:none; border-radius:6px; cursor:pointer; font-size:1rem;">{{ themeStore.theme === 'dark' ? '☀️' : '🌙' }}</button>
           <button @click="router.push('/admin')" aria-label="Perfil" style="background:var(--btn-bg); color:var(--text); padding:10px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.85rem;">👤</button>
           <button @click="handleNotifications" aria-label="Notificaciones" style="background:var(--btn-bg); color:var(--text); padding:10px 14px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.85rem; position:relative;">🔔<span v-if="notifCount > 0" role="status" style="position:absolute;top:-4px;right:-4px;background:#ef4444;color:white;font-size:0.6rem;padding:2px 5px;border-radius:50%;font-weight:bold;">{{ notifCount }}</span></button>
           <button @click="logout" aria-label="Cerrar sesión" style="background:#ef4444; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">🚪 Cerrar Sesión</button>

@@ -2,38 +2,77 @@ import { supabase } from './supabase'
 import { sanitizarImgSrc } from './helpers'
 import { useToastStore } from '../stores/toastStore'
 
-function handleError(context, error) {
+const MAX_RETRIES = 2
+const RETRY_DELAY = 1000
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function isNetworkError(error) {
+  return !error?.code && (error?.message?.includes('Failed to fetch') ||
+    error?.message?.includes('NetworkError') ||
+    error?.message?.includes('network') ||
+    error?.message?.includes('ERR_INTERNET_DISCONNECTED'))
+}
+
+async function handleError(context, error, retryFn = null) {
   if (error) {
     console.error(context, error)
+
+    if (isNetworkError(error) && retryFn) {
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        await sleep(RETRY_DELAY * attempt)
+        try {
+          const result = await retryFn()
+          return result
+        } catch (retryError) {
+          if (attempt === MAX_RETRIES) {
+            console.error(`${context} (after ${MAX_RETRIES} retries):`, retryError)
+          }
+        }
+      }
+    }
+
     const toast = useToastStore()
-    toast.error(`Error: ${error.message || 'Error de conexión con Supabase'}`)
-    return true
+    if (isNetworkError(error)) {
+      toast.error('Error de conexión. Verificá tu internet.')
+    } else if (error.code === 'PGRST116') {
+      toast.warning('No se encontraron datos')
+    } else {
+      toast.error(`Error: ${error.message || 'Error inesperado'}`)
+    }
+    return { error: true, data: null }
   }
-  return false
+  return { error: false, data: null }
 }
 
 export const db = {
   async getTorneos() {
     const { data, error } = await supabase.from('torneos').select('*')
-    if (handleError('Error fetching torneos:', error)) return []
+    const result = await handleError('Error fetching torneos:', error)
+    if (result?.error) return []
     return data || []
   },
 
   async getTorneo(id) {
     const { data, error } = await supabase.from('torneos').select('*').eq('id', id).single()
-    if (handleError('Error fetching torneo:', error)) return null
+    const result = await handleError('Error fetching torneo:', error)
+    if (result?.error) return null
     return data
   },
 
   async createTorneo(nombre, descripcion) {
     const { data, error } = await supabase.from('torneos').insert([{ nombre, descripcion }]).select()
-    if (handleError('Error creating torneo:', error)) return null
+    const result = await handleError('Error creating torneo:', error)
+    if (result?.error) return null
     return data?.[0]
   },
 
   async updateTorneo(id, updates) {
     const { data, error } = await supabase.from('torneos').update(updates).eq('id', id).select()
-    if (handleError('Error updating torneo:', error)) return null
+    const result = await handleError('Error updating torneo:', error)
+    if (result?.error) return null
     return data?.[0]
   },
 
@@ -44,7 +83,7 @@ export const db = {
     await supabase.from('jugador_equipo').delete().in('equipo_id', eqIds)
     await supabase.from('equipos').delete().eq('torneo_id', id)
     const { error } = await supabase.from('torneos').delete().eq('id', id)
-    handleError('Error deleting torneo:', error)
+    if (error) handleError('Error deleting torneo:', error)
   },
 
   async _deleteAllResultsByEquipos(equipoIds) {
@@ -58,20 +97,23 @@ export const db = {
 
   async getEquipos(torneoId) {
     const { data, error } = await supabase.from('equipos').select('*').eq('torneo_id', torneoId)
-    if (handleError('Error fetching equipos:', error)) return []
+    const result = await handleError('Error fetching equipos:', error)
+    if (result?.error) return []
     if (data) data.forEach(e => { e.logo = sanitizarImgSrc(e.logo) })
     return data || []
   },
 
   async createEquipo(torneoId, nombre, dia, logo) {
     const { data, error } = await supabase.from('equipos').insert([{ torneo_id: torneoId, nombre, dia_semana: dia, logo }]).select()
-    if (handleError('Error creating equipo:', error)) return null
+    const result = await handleError('Error creating equipo:', error)
+    if (result?.error) return null
     return data?.[0]
   },
 
   async updateEquipo(id, updates) {
     const { data, error } = await supabase.from('equipos').update(updates).eq('id', id).select()
-    if (handleError('Error updating equipo:', error)) return null
+    const result = await handleError('Error updating equipo:', error)
+    if (result?.error) return null
     return data?.[0]
   },
 
@@ -101,13 +143,15 @@ export const db = {
 
   async createJugador(torneoId, ci, nombre, posicion, pierna, foto) {
     const { data, error } = await supabase.from('jugadores').insert([{ torneo_id: torneoId, ci, nombre, posicion, pierna, foto }]).select()
-    if (handleError('Error creating jugador:', error)) return null
+    const result = await handleError('Error creating jugador:', error)
+    if (result?.error) return null
     return data?.[0]
   },
 
   async updateJugador(id, updates) {
     const { data, error } = await supabase.from('jugadores').update(updates).eq('id', id).select()
-    if (handleError('Error updating jugador:', error)) return null
+    const result = await handleError('Error updating jugador:', error)
+    if (result?.error) return null
     return data?.[0]
   },
 
@@ -119,25 +163,29 @@ export const db = {
 
   async vincularJugadorEquipo(jugadorId, equipoId) {
     const { data, error } = await supabase.from('jugador_equipo').insert([{ jugador_id: jugadorId, equipo_id: equipoId }]).select()
-    if (handleError('Error vinculando jugador:', error)) return null
+    const result = await handleError('Error vinculando jugador:', error)
+    if (result?.error) return null
     return data?.[0]
   },
 
   async getEquiposJugador(jugadorId) {
     const { data, error } = await supabase.from('jugador_equipo').select('equipo_id').eq('jugador_id', jugadorId)
-    if (handleError('Error fetching equipos del jugador:', error)) return []
+    const result = await handleError('Error fetching equipos del jugador:', error)
+    if (result?.error) return []
     return data?.map(e => e.equipo_id) || []
   },
 
   async getFixture(torneoId) {
     const { data, error } = await supabase.from('fixture').select('*').eq('torneo_id', torneoId)
-    if (handleError('Error fetching fixture:', error)) return []
+    const result = await handleError('Error fetching fixture:', error)
+    if (result?.error) return []
     return data || []
   },
 
   async createFixture(torneoId, dia, fecha, hora, localId, visitanteId) {
     const { data, error } = await supabase.from('fixture').insert([{ torneo_id: torneoId, dia_semana: dia, fecha, hora, equipo_local_id: localId, equipo_visitante_id: visitanteId }]).select()
-    if (handleError('Error creating fixture:', error)) return null
+    const result = await handleError('Error creating fixture:', error)
+    if (result?.error) return null
     return data?.[0]
   },
 
@@ -153,31 +201,36 @@ export const db = {
       goles_local: golesLocal, goles_visitante: golesVisitante,
       mvp_id: mvpId, estado: 'finalizado'
     }]).select()
-    if (handleError('Error creating resultado:', error)) return null
+    const result = await handleError('Error creating resultado:', error)
+    if (result?.error) return null
     return data?.[0]
   },
 
   async getResultados(torneoId) {
     const { data, error } = await supabase.from('resultados').select('*').eq('torneo_id', torneoId)
-    if (handleError('Error fetching resultados:', error)) return []
+    const result = await handleError('Error fetching resultados:', error)
+    if (result?.error) return []
     return data || []
   },
 
   async createGol(resultadoId, jugadorId, equipoId, minuto) {
     const { data, error } = await supabase.from('goles').insert([{ resultado_id: resultadoId, jugador_id: jugadorId, equipo_id: equipoId, minuto }]).select()
-    if (handleError('Error creating gol:', error)) return null
+    const result = await handleError('Error creating gol:', error)
+    if (result?.error) return null
     return data?.[0]
   },
 
   async getGoles(resultadoId) {
     const { data, error } = await supabase.from('goles').select('*').eq('resultado_id', resultadoId)
-    if (handleError('Error fetching goles:', error)) return []
+    const result = await handleError('Error fetching goles:', error)
+    if (result?.error) return []
     return data || []
   },
 
   async updateResultado(id, updates) {
     const { data, error } = await supabase.from('resultados').update(updates).eq('id', id).select()
-    if (handleError('Error updating resultado:', error)) return null
+    const result = await handleError('Error updating resultado:', error)
+    if (result?.error) return null
     return data?.[0]
   },
 
@@ -198,13 +251,44 @@ export const db = {
 
   async createTarjeta(resultadoId, jugadorId, equipoId, tipo, minuto) {
     const { data, error } = await supabase.from('tarjetas').insert([{ resultado_id: resultadoId, jugador_id: jugadorId, equipo_id: equipoId, tipo, minuto }]).select()
-    if (handleError('Error creating tarjeta:', error)) return null
+    const result = await handleError('Error creating tarjeta:', error)
+    if (result?.error) return null
     return data?.[0]
   },
 
   async getTarjetas(resultadoId) {
     const { data, error } = await supabase.from('tarjetas').select('*').eq('resultado_id', resultadoId)
-    if (handleError('Error fetching tarjetas:', error)) return []
+    const result = await handleError('Error fetching tarjetas:', error)
+    if (result?.error) return []
     return data || []
+  },
+
+  async getSanciones(torneoId) {
+    const { data, error } = await supabase.from('sanciones').select('*').eq('torneo_id', torneoId)
+    const result = await handleError('Error fetching sanciones:', error)
+    if (result?.error) return []
+    return data || []
+  },
+
+  async createSancion(torneoId, jugadorId, motivo, tipo, fechaInicio, fechaFin) {
+    const { data, error } = await supabase.from('sanciones').insert([{
+      torneo_id: torneoId, jugador_id: jugadorId, motivo, tipo,
+      fecha_inicio: fechaInicio, fecha_fin: fechaFin, activa: true
+    }]).select()
+    const result = await handleError('Error creating sancion:', error)
+    if (result?.error) return null
+    return data?.[0]
+  },
+
+  async updateSancion(id, updates) {
+    const { data, error } = await supabase.from('sanciones').update(updates).eq('id', id).select()
+    const result = await handleError('Error updating sancion:', error)
+    if (result?.error) return null
+    return data?.[0]
+  },
+
+  async deleteSancion(id) {
+    const { error } = await supabase.from('sanciones').delete().eq('id', id)
+    if (error) handleError('Error deleting sancion:', error)
   }
 }

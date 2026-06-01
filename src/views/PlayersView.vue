@@ -123,6 +123,7 @@ onMounted(async () => {
         <div style="position:relative; flex-shrink:0;">
           <img
             :src="j.foto || DEFAULT_AVATAR"
+            loading="lazy"
             style="width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid var(--border);"
           />
           <span
@@ -140,6 +141,7 @@ onMounted(async () => {
             <img
               v-if="logoEq(j)"
               :src="logoEq(j)"
+              loading="lazy"
               :title="nombreEq(j.equipos?.[0])"
               style="width:16px;height:16px;border-radius:50%;object-fit:cover;"
               @error="$event.target.style.display='none'"
@@ -172,7 +174,7 @@ onMounted(async () => {
         <button @click="cerrarDetalle" style="position:absolute;top:10px;right:10px;background:#ef4444;color:white;border:none;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:1.2rem;">✕</button>
         <div style="text-align:center;">
           <div style="display:inline-block; position:relative;">
-            <img :src="selectedPlayer.foto || DEFAULT_AVATAR" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #eab308;margin-bottom:8px;">
+            <img :src="selectedPlayer.foto || DEFAULT_AVATAR" loading="lazy" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #eab308;margin-bottom:8px;">
             <span
               style="position:absolute;bottom:5px;right:-4px;color:black;padding:2px 8px;border-radius:10px;font-size:0.6rem;font-weight:bold;z-index:5;"
               :style="{ background: getNivelColor(calcularNivel(calcularXP(selectedPlayer))) }"

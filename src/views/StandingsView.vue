@@ -109,6 +109,7 @@ function dif(eq) {
               <img
                 v-if="e.logo"
                 :src="e.logo"
+                loading="lazy"
                 class="mini-logo-table"
                 style="width:28px;height:28px;border-radius:50%;margin-right:8px;"
                 @error="$event.target.style.display='none'"
@@ -149,6 +150,7 @@ function dif(eq) {
           <img
             v-if="selectedEquipo.logo"
             :src="selectedEquipo.logo"
+            loading="lazy"
             style="width:60px;height:60px;border-radius:50%;object-fit:cover;background:var(--border);margin-bottom:10px;"
             @error="$event.target.style.display='none'"
           >
@@ -177,6 +179,7 @@ function dif(eq) {
         >
           <img
             :src="j.foto || ''"
+            loading="lazy"
             style="width:32px;height:32px;border-radius:50%;object-fit:cover;background:var(--border);"
             @error="$event.target.style.display='none'"
           >
