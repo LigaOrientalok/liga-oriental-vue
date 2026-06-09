@@ -40,14 +40,31 @@ function getTierClass(nivel, esCampeon) {
   return ''
 }
 
+function getTierColor(nivel, esCampeon) {
+  if (esCampeon) return '#eab308'
+  if (nivel >= 12) return '#8b5cf6'
+  if (nivel >= 9) return '#eab308'
+  if (nivel >= 6) return '#94a3b8'
+  if (nivel >= 3) return '#cd7f32'
+  return '#4a5568'
+}
+
+function barColor(val) {
+  if (val >= 85) return '#22c55e'
+  if (val >= 70) return '#eab308'
+  if (val >= 50) return '#f97316'
+  return '#ef4444'
+}
+
 function calcularAtributos(j) {
-  const gpp = j.pj > 0 ? (j.goles || 0) / j.pj : 0
-  const mvpRatio = j.pj > 0 ? (j.mvps || 0) / j.pj : 0
+  if (!j.pj) return { fin: 0, est: 0, def: 0, res: 0 }
+  const gpp = (j.goles || 0) / j.pj
+  const mvpRatio = (j.mvps || 0) / j.pj
   return {
     fin: Math.min(99, Math.round(gpp * 25 + (j.goles || 0) * 0.3 + 30)),
     est: Math.min(99, Math.round(mvpRatio * 40 + (j.mvps || 0) * 0.5 + 20)),
     def: Math.min(99, Math.round((j.vallas_invictas || 0) * 8 + (j.posicion === 'POR' || j.posicion === 'DFC' ? 25 : 0) + 30)),
-    res: Math.min(99, Math.round((j.pj || 0) * 1.5 + 30))
+    res: Math.min(99, Math.round(j.pj * 1.5 + 30))
   }
 }
 
@@ -122,7 +139,13 @@ onMounted(async () => {
             class="fifa-crown"
           >👑</span>
 
-          <div class="fifa-photo-wrap">
+          <div
+            class="fifa-photo-wrap"
+            :style="{
+              borderColor: getTierColor(calcularNivel(calcularXP(j)), championTeams.length > 0 && (j.equipos || []).some(eId => championTeams.includes(eId))),
+              boxShadow: '0 0 14px ' + getTierColor(calcularNivel(calcularXP(j)), championTeams.length > 0 && (j.equipos || []).some(eId => championTeams.includes(eId))) + '50'
+            }"
+          >
             <img :src="j.foto || DEFAULT_AVATAR" loading="lazy">
           </div>
 
@@ -137,21 +160,31 @@ onMounted(async () => {
 
           <div class="fifa-stats">
             <div class="fifa-stat">
-              <span class="label">⚽ FIN</span>
-              <span class="value">{{ calcularAtributos(j).fin }}</span>
+              <span class="s-label">⚽ FIN</span>
+              <div class="s-track"><div class="s-fill" :style="{ width: calcularAtributos(j).fin + '%', background: barColor(calcularAtributos(j).fin) }"></div></div>
+              <span class="s-val">{{ calcularAtributos(j).fin }}</span>
             </div>
             <div class="fifa-stat">
-              <span class="label">⭐ EST</span>
-              <span class="value">{{ calcularAtributos(j).est }}</span>
+              <span class="s-label">⭐ EST</span>
+              <div class="s-track"><div class="s-fill" :style="{ width: calcularAtributos(j).est + '%', background: barColor(calcularAtributos(j).est) }"></div></div>
+              <span class="s-val">{{ calcularAtributos(j).est }}</span>
             </div>
             <div class="fifa-stat">
-              <span class="label">🛡️ DEF</span>
-              <span class="value">{{ calcularAtributos(j).def }}</span>
+              <span class="s-label">🛡️ DEF</span>
+              <div class="s-track"><div class="s-fill" :style="{ width: calcularAtributos(j).def + '%', background: barColor(calcularAtributos(j).def) }"></div></div>
+              <span class="s-val">{{ calcularAtributos(j).def }}</span>
             </div>
             <div class="fifa-stat">
-              <span class="label">🏃 RES</span>
-              <span class="value">{{ calcularAtributos(j).res }}</span>
+              <span class="s-label">🏃 RES</span>
+              <div class="s-track"><div class="s-fill" :style="{ width: calcularAtributos(j).res + '%', background: barColor(calcularAtributos(j).res) }"></div></div>
+              <span class="s-val">{{ calcularAtributos(j).res }}</span>
             </div>
+          </div>
+
+          <div class="fifa-real-stats">
+            ⚽ <span class="rs-val">{{ j.goles || 0 }}</span>
+            ⭐ <span class="rs-val">{{ j.mvps || 0 }}</span>
+            🏃 <span class="rs-val">{{ j.pj || 0 }}</span>
           </div>
 
           <img

@@ -231,8 +231,7 @@ input, select {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 22px 16px 16px;
-  min-height: 380px;
+  padding: 20px 14px 14px;
   border: 2px solid transparent;
 }
 .fifa-card:hover {
@@ -241,23 +240,23 @@ input, select {
 
 /* Tier background gradients */
 .fifa-bronze {
-  background: linear-gradient(180deg, #5c3a1e 0%, #8B5E3C 40%, #3d2410 100%);
+  background: linear-gradient(180deg, #5c3a1e 0%, #8B5E3C 45%, #3d2410 100%);
   border-color: #cd7f32;
 }
 .fifa-silver {
-  background: linear-gradient(180deg, #4a4f56 0%, #7a828e 40%, #2d3138 100%);
+  background: linear-gradient(180deg, #4a4f56 0%, #7a828e 45%, #2d3138 100%);
   border-color: #94a3b8;
 }
 .fifa-gold {
-  background: linear-gradient(180deg, #6d5500 0%, #eab308 40%, #4a3900 100%);
+  background: linear-gradient(180deg, #6d5500 0%, #eab308 45%, #4a3900 100%);
   border-color: #eab308;
 }
 .fifa-diamond {
-  background: linear-gradient(180deg, #3b1f6e 0%, #8b5cf6 40%, #1f0f3d 100%);
+  background: linear-gradient(180deg, #3b1f6e 0%, #8b5cf6 45%, #1f0f3d 100%);
   border-color: #8b5cf6;
 }
 .fifa-champion {
-  background: linear-gradient(180deg, #6d5500 0%, #eab308 40%, #4a3900 100%);
+  background: linear-gradient(180deg, #6d5500 0%, #eab308 45%, #4a3900 100%);
   border-color: #eab308;
   box-shadow: 0 0 30px rgba(234,179,8,0.5);
 }
@@ -266,11 +265,11 @@ input, select {
 .fifa-card::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  inset: 0;
   background: linear-gradient(
     135deg,
     transparent 35%,
-    rgba(255,255,255,0.12) 50%,
+    rgba(255,255,255,0.1) 50%,
     transparent 65%
   );
   pointer-events: none;
@@ -280,11 +279,11 @@ input, select {
 /* Rating badge (top-left) */
 .fifa-rating {
   position: absolute;
-  top: 10px;
-  left: 14px;
+  top: 8px;
+  left: 12px;
   z-index: 5;
   font-family: 'Oswald', sans-serif;
-  font-size: 2.6rem;
+  font-size: 2.4rem;
   font-weight: 900;
   color: white;
   line-height: 1;
@@ -294,10 +293,10 @@ input, select {
 /* Position badge (top-right) */
 .fifa-pos-badge {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 10px;
+  right: 10px;
   z-index: 5;
-  font-size: 0.6rem;
+  font-size: 0.55rem;
   font-weight: 800;
   color: white;
   background: rgba(0,0,0,0.55);
@@ -310,23 +309,26 @@ input, select {
 /* Crown for champions */
 .fifa-crown {
   position: absolute;
-  top: 46px;
-  left: 14px;
+  top: 42px;
+  left: 12px;
   z-index: 5;
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   filter: drop-shadow(0 0 6px rgba(234,179,8,0.8));
 }
 
-/* Player photo */
+/* Player photo with tier-colored border */
 .fifa-photo-wrap {
   position: relative;
   z-index: 2;
-  margin: 20px 0 6px;
-  width: 100px;
-  height: 100px;
+  margin: 16px 0 4px;
+  width: 90px;
+  height: 90px;
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
+  border: 3px solid #eab308;
+  box-shadow: 0 0 12px rgba(234,179,8,0.25);
+  transition: border-color 0.3s, box-shadow 0.3s;
 }
 .fifa-photo-wrap img {
   width: 100%;
@@ -338,23 +340,23 @@ input, select {
 .fifa-level-badge {
   position: relative;
   z-index: 2;
-  font-size: 0.55rem;
+  font-size: 0.5rem;
   font-weight: 800;
   color: black;
-  padding: 3px 12px;
+  padding: 2px 10px;
   border-radius: 8px;
   letter-spacing: 0.5px;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 /* Name */
 .fifa-name {
   position: relative;
   z-index: 2;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: white;
-  margin: 4px 0 2px;
+  margin: 3px 0 2px;
   text-transform: uppercase;
   letter-spacing: 1px;
   text-shadow: 0 1px 6px rgba(0,0,0,0.5);
@@ -364,40 +366,74 @@ input, select {
   max-width: 90%;
 }
 
-/* Stats grid */
+/* FIFA attributes (2-col grid with bars) */
 .fifa-stats {
   position: relative;
   z-index: 2;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px 16px;
-  margin-top: 6px;
+  gap: 3px 12px;
+  margin-top: 5px;
   width: 100%;
-  padding: 0 8px;
+  padding: 0 6px;
 }
 .fifa-stat {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  font-size: 0.75rem;
-  color: rgba(255,255,255,0.75);
-  gap: 4px;
+  gap: 5px;
 }
-.fifa-stat .label { font-size: 0.65rem; }
-.fifa-stat .value {
+.fifa-stat .s-label {
+  width: 30px;
+  font-size: 0.55rem;
+  color: rgba(255,255,255,0.65);
+  text-align: left;
+  flex-shrink: 0;
+}
+.fifa-stat .s-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(0,0,0,0.35);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.fifa-stat .s-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.fifa-stat .s-val {
+  width: 20px;
+  text-align: right;
   font-weight: 700;
   color: white;
-  font-size: 0.85rem;
+  font-size: 0.65rem;
+  flex-shrink: 0;
+}
+
+/* Real stats row */
+.fifa-real-stats {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.65);
+}
+.fifa-real-stats .rs-val {
+  font-weight: 700;
+  color: white;
 }
 
 /* Team logo chip */
 .fifa-team-logo {
   position: absolute;
-  bottom: 12px;
-  right: 12px;
+  bottom: 10px;
+  right: 10px;
   z-index: 5;
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   border: 2px solid rgba(255,255,255,0.3);
   object-fit: cover;
