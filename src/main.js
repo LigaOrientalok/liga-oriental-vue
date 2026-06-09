@@ -3,12 +3,13 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import './style.css'
-import { useThemeStore } from './stores/themeStore'
-
-const themeStore = useThemeStore()
-themeStore.init()
 
 const app = createApp(App)
-app.use(createPinia())
+const pinia = createPinia()
+app.use(pinia)
 app.use(router)
 app.mount('#app')
+
+const { useThemeStore } = await import('./stores/themeStore')
+const themeStore = useThemeStore()
+themeStore.init()

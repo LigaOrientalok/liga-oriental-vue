@@ -38,12 +38,14 @@ export const useAuthStore = defineStore('auth', {
     async loadUserData() {
       if (!this.user) return
       try {
-        const { data } = await supabase.from('usuarios').select('*').eq('email', this.user.email).maybeSingle()
+        const { data, error } = await supabase.from('usuarios').select('*').eq('id', this.user.id).maybeSingle()
+        if (error) throw error
         this.userData = data
         if (!data) {
-          const { data: newUser } = await supabase.from('usuarios').upsert({
+          const { data: newUser, error: insertError } = await supabase.from('usuarios').upsert({
             id: this.user.id, email: this.user.email, rol: 'usuario', estado: 'pendiente', fecha_registro: new Date().toISOString()
           }).select().maybeSingle()
+          if (insertError) throw insertError
           this.userData = newUser || { rol: 'usuario', estado: 'pendiente' }
         }
       } catch (e) {
