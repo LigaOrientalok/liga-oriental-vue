@@ -68,10 +68,10 @@ async function loadData() {
 }
 
 watch(() => [torneo.torneoActual, route.params.id], async () => {
-  if (torneo.torneoActual && route.params.id) await loadData()
+  await loadData()
 })
 onMounted(async () => {
-  if (torneo.torneoActual && route.params.id) await loadData()
+  await loadData()
 })
 </script>
 

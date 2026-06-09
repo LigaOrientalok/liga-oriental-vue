@@ -254,17 +254,20 @@ async function guardarEquipo() {
   try {
     const reader = new FileReader()
     reader.onload = async (e) => {
-      const logo = await comprimirImagen(e.target.result)
-      const eq = await db.createEquipo(torneo.torneoActual, nom, newTeamDia.value, logo)
-      if (eq) {
-        toast.success('✅ Equipo creado')
-        newTeamName.value = ''
-        newTeamDia.value = 'Lunes'
-        newTeamLogo.value = null
-        await cargarEquipos()
-      }
+      try {
+        const logo = await comprimirImagen(e.target.result)
+        const eq = await db.createEquipo(torneo.torneoActual, nom, newTeamDia.value, logo)
+        if (eq) {
+          toast.success('✅ Equipo creado')
+          newTeamName.value = ''
+          newTeamDia.value = 'Lunes'
+          newTeamLogo.value = null
+          await cargarEquipos()
+        }
+      } catch { toast.error('Error al comprimir imagen') }
       saving.value = false
     }
+    reader.onerror = () => { saving.value = false; toast.error('Error al leer la imagen') }
     reader.readAsDataURL(fileInput)
   } catch (e) {
     saving.value = false

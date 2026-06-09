@@ -93,8 +93,8 @@ const chartOptions = {
   } finally { loading.value = false }
 }
 
-watch(() => [torneo.torneoActual, route.params.id], async () => { if (torneo.torneoActual && route.params.id) await loadData() })
-onMounted(async () => { if (torneo.torneoActual && route.params.id) await loadData() })
+watch(() => [torneo.torneoActual, route.params.id], async () => { await loadData() })
+onMounted(async () => { await loadData() })
 </script>
 
 <template>

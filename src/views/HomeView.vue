@@ -80,8 +80,8 @@ async function loadData() {
   } finally { loading.value = false }
 }
 
-watch(() => torneo.torneoActual, async () => { if (torneo.torneoActual) try { await loadData() } catch (e) { console.error(e) } })
-onMounted(async () => { if (torneo.torneoActual) try { await loadData() } catch (e) { console.error(e) } })
+watch(() => torneo.torneoActual, async () => { try { await loadData() } catch (e) { console.error(e) } })
+onMounted(async () => { try { await loadData() } catch (e) { console.error(e) } })
 </script>
 
 <template>

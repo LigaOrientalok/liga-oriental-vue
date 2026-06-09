@@ -58,9 +58,11 @@ async function handleLogin() {
   }
   loading.value = true
   message.value = ''
-  const ok = await auth.login(email.value.trim(), password.value)
+  try {
+    const ok = await auth.login(email.value.trim(), password.value)
+    if (!ok) mostrarError('Email o contraseña incorrectos')
+  } catch { mostrarError('Error de conexión') }
   loading.value = false
-  if (!ok) mostrarError('Email o contraseña incorrectos')
 }
 
 async function handleRegister() {
@@ -68,12 +70,14 @@ async function handleRegister() {
   if (!canSubmit.value) return
   loading.value = true
   message.value = ''
-  const ok = await auth.register(email.value.trim(), password.value)
+  try {
+    const ok = await auth.register(email.value.trim(), password.value)
+    if (ok) {
+      isRegister.value = false
+      mostrarError('✅ Cuenta creada. Revisá tu email para confirmar.')
+    }
+  } catch { mostrarError('Error de conexión') }
   loading.value = false
-  if (ok) {
-    isRegister.value = false
-    mostrarError('✅ Cuenta creada. Revisá tu email para confirmar.')
-  }
 }
 
 async function handleResetPassword() {
@@ -83,7 +87,9 @@ async function handleResetPassword() {
   }
   loading.value = true
   message.value = ''
-  await auth.resetPassword(email.value.trim())
+  try {
+    await auth.resetPassword(email.value.trim())
+  } catch { mostrarError('Error de conexión') }
   loading.value = false
 }
 

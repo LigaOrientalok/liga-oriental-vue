@@ -27,11 +27,15 @@ export const useTorneoStore = defineStore('torneo', {
 
   actions: {
     async init() {
-      const torneos = await db.getTorneos()
-      this.torneos = torneos
-      if (torneos.length > 0) {
-        this.torneoActual = torneos[0].id
-        await this.loadData()
+      try {
+        const torneos = await db.getTorneos()
+        this.torneos = torneos
+        if (torneos.length > 0) {
+          this.torneoActual = torneos[0].id
+          await this.loadData()
+        }
+      } catch (e) {
+        console.error('Error initializing torneo store:', e)
       }
     },
 

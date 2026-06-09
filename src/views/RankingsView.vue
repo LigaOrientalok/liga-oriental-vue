@@ -120,10 +120,10 @@ async function loadData() {
 }
 
 watch(() => torneo.torneoActual, async () => {
-  if (torneo.torneoActual) await loadData()
+  await loadData()
 })
 onMounted(async () => {
-  if (torneo.torneoActual) await loadData()
+  await loadData()
 })
 </script>
 
