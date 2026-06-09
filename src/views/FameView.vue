@@ -87,7 +87,7 @@ onMounted(async () => {
 
 <template>
   <section>
-    <div v-if="loading" class="box" style="text-align:center; color:#b0bcc4;">Cargando...</div>
+    <div v-if="loading" class="box spinner"><div class="spinner-ring"></div><span>Cargando...</span></div>
     <div v-else-if="cracks.length === 0" class="box" style="text-align:center; color:#8b949e;">
       No hay jugadores en este torneo
     </div>

@@ -85,7 +85,7 @@ onMounted(async () => { try { await loadData() } catch (e) { console.error(e) } 
 </script>
 
 <template>
-  <div v-if="loading" class="box" style="text-align:center; color:var(--text-accent);">Cargando...</div>
+  <div v-if="loading" class="box spinner"><div class="spinner-ring"></div><span>Cargando...</span></div>
 
   <div v-else-if="!torneo.torneoActual" class="box" style="text-align:center; color:var(--text-muted); padding:40px;">
     <h2 style="color:#eab308; margin-bottom:10px;">Bienvenido a Liga Oriental</h2>
@@ -127,7 +127,7 @@ onMounted(async () => { try { await loadData() } catch (e) { console.error(e) } 
       </div>
     </div>
 
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+    <div class="home-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
       <div class="box">
         <h4 style="color:#eab308; margin-bottom:10px;">📊 Tabla de Posiciones</h4>
         <div v-if="equipoStats.length === 0" style="color:var(--text-muted);">Sin equipos</div>

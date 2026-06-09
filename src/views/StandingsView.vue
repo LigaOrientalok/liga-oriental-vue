@@ -79,7 +79,7 @@ function dif(eq) {
     </div>
 
     <div v-else-if="loading" class="box" style="text-align:center; color:var(--text-accent);">
-      Cargando...
+      <div class="spinner-ring"></div><span>Cargando...</span>
     </div>
 
     <div v-else-if="equiposFiltrados.length === 0" class="box" style="text-align:center; color:#f97316;">

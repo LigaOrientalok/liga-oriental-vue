@@ -460,7 +460,7 @@ onMounted(async () => {
     <!-- Fixture Display -->
     <div class="box">
       <h3>📋 Fixture</h3>
-      <div v-if="loading" style="text-align:center; color:var(--text-accent); padding:20px;">Cargando...</div>
+      <div v-if="loading" class="spinner" style="padding:20px;"><div class="spinner-ring"></div><span>Cargando...</span></div>
       <div v-else-if="fixture.length === 0" style="color:var(--text-muted);">No hay partidos en el fixture</div>
       <div v-else>
         <div v-for="(matches, titulo) in fixtureAgrupado" :key="titulo" style="margin-bottom:20px;">

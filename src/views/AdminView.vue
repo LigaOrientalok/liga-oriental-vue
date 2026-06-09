@@ -487,7 +487,7 @@ watch(() => torneo.torneoActual, async () => {
 
           <div class="box">
             <h3 style="color:#eab308; margin-bottom:15px;">📋 Equipos</h3>
-            <div v-if="loading" style="text-align:center; padding:20px; color:var(--text-accent);">Cargando...</div>
+            <div v-if="loading" class="spinner"><div class="spinner-ring"></div><span>Cargando...</span></div>
             <div v-else-if="equipos.length === 0" style="color:var(--text-accent);">No hay equipos aún</div>
             <div v-else v-for="eq in equipos" :key="eq.id" style="background:var(--bg-input); border-radius:8px; padding:15px; margin-bottom:10px; border-left:4px solid #eab308;">
               <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
@@ -530,7 +530,7 @@ watch(() => torneo.torneoActual, async () => {
           <h3 style="color:#eab308; margin-bottom:15px;">
             📋 Gestión de Jugadores ({{ jugadores.length }})
           </h3>
-          <div v-if="loading" style="text-align:center; padding:20px; color:var(--text-accent);">Cargando...</div>
+          <div v-if="loading" class="spinner"><div class="spinner-ring"></div><span>Cargando...</span></div>
           <div v-else-if="jugadores.length === 0" style="color:var(--text-muted);">No hay jugadores registrados</div>
           <table v-else style="width:100%; border-collapse:collapse; font-size:0.85rem;">
             <thead>
@@ -602,7 +602,7 @@ watch(() => torneo.torneoActual, async () => {
             <h3 style="color:#eab308; margin-bottom:15px;">
               📋 Sanciones ({{ sanciones.length }})
             </h3>
-            <div v-if="loadingSanciones" style="text-align:center; padding:20px; color:var(--text-accent);">Cargando...</div>
+            <div v-if="loadingSanciones" class="spinner"><div class="spinner-ring"></div><span>Cargando...</span></div>
             <div v-else-if="sanciones.length === 0" style="color:var(--text-muted); text-align:center; padding:20px;">No hay sanciones</div>
             <div v-else v-for="s in sanciones" :key="s.id" style="background:var(--bg-input); border-radius:8px; padding:12px; margin-bottom:8px; border-left:4px solid;" :style="{ borderLeftColor: s.tipo === 'suspension' ? '#ef4444' : '#f97316' }">
               <div style="display:flex; justify-content:space-between; align-items:start;">

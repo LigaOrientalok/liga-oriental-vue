@@ -256,7 +256,7 @@ onMounted(async () => { if (torneo.torneoActual) try { await loadData() } catch 
 
 <template>
   <section>
-    <div v-if="loading" class="box" style="text-align:center; color:var(--text-accent);">Cargando...</div>
+    <div v-if="loading" class="box spinner"><div class="spinner-ring"></div><span>Cargando...</span></div>
     <div v-else>
       <div class="box">
         <h3>🎯 Misiones</h3>

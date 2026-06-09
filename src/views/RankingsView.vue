@@ -144,7 +144,7 @@ onMounted(async () => {
       </div>
     </div>
 
-    <div v-if="loading" class="box" style="text-align:center; color:var(--text-accent);">Cargando...</div>
+    <div v-if="loading" class="box spinner"><div class="spinner-ring"></div><span>Cargando...</span></div>
     <div v-else-if="currentRanking.length === 0" class="box" style="text-align:center; color:var(--text-muted);">Sin datos</div>
 
     <!-- Equipos ranking -->

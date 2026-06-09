@@ -20,10 +20,10 @@ const navOpen = ref(false)
 
 const navItems = [
   { path: '/', label: 'INICIO', icon: '🏠' },
-  { path: '/registro', label: 'REGISTRO', icon: '' },
-  { path: '/tablas', label: 'TABLAS', icon: '' },
+  { path: '/registro', label: 'REGISTRO', icon: '📝' },
+  { path: '/tablas', label: 'TABLAS', icon: '📊' },
   { path: '/fixture', label: 'FIXTURE', icon: '📅' },
-  { path: '/stats', label: 'STATS', icon: '📊' },
+  { path: '/stats', label: 'STATS', icon: '📈' },
   { path: '/fama', label: 'FAMA', icon: '🏆' },
   { path: '/jugadores', label: 'JUGADORES', icon: '🔍' },
   { path: '/equipos', label: 'EQUIPOS', icon: '📋' },
@@ -107,11 +107,9 @@ onUnmounted(() => {
 
 <template>
   <template v-if="auth.loading">
-    <div style="min-height:100vh; display:flex; justify-content:center; align-items:center; background:#0b0e14; color:#eab308; font-family:sans-serif; font-size:1.2rem;">
-      <div style="text-align:center;">
-        <div style="font-size:3rem; margin-bottom:20px;">⚡</div>
-        <div>Cargando Liga Oriental...</div>
-      </div>
+    <div class="spinner" style="min-height:100vh;">
+      <div class="spinner-ring" style="width:48px;height:48px;border-width:5px;"></div>
+      <span style="color:var(--gold); font-size:1.2rem;">Cargando Liga Oriental...</span>
     </div>
   </template>
 
@@ -146,27 +144,29 @@ onUnmounted(() => {
   <template v-else>
     <header>
       <div class="header-row">
-        <h1>LIGA <span style="color:#eab308;">ORIENTAL</span></h1>
-        <div style="display:flex; gap:8px; align-items:center;">
+        <h1>LIGA <span class="gold">ORIENTAL</span></h1>
+        <div class="header-actions">
           <button class="hamburger" @click="navOpen = !navOpen" aria-label="Abrir menú de navegación">☰</button>
-          <button @click="themeStore.toggleTheme()" aria-label="Cambiar tema" style="background:var(--btn-bg); color:var(--text); padding:10px 14px; border:none; border-radius:6px; cursor:pointer; font-size:1rem;">{{ themeStore.theme === 'dark' ? '☀️' : '🌙' }}</button>
-          <button @click="router.push('/admin')" aria-label="Perfil" style="background:var(--btn-bg); color:var(--text); padding:10px 16px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.85rem;">👤</button>
-          <button @click="handleNotifications" aria-label="Notificaciones" style="background:var(--btn-bg); color:var(--text); padding:10px 14px; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.85rem; position:relative;">🔔<span v-if="notifCount > 0" role="status" style="position:absolute;top:-4px;right:-4px;background:#ef4444;color:white;font-size:0.6rem;padding:2px 5px;border-radius:50%;font-weight:bold;">{{ notifCount }}</span></button>
-          <button @click="logout" aria-label="Cerrar sesión" style="background:#ef4444; color:white; padding:10px 20px; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">🚪 Cerrar Sesión</button>
+          <button class="btn-icon" @click="themeStore.toggleTheme()" aria-label="Cambiar tema">{{ themeStore.theme === 'dark' ? '☀️' : '🌙' }}</button>
+          <button class="btn-icon" @click="router.push('/admin')" aria-label="Perfil">👤</button>
+          <button class="btn-icon btn-notif" @click="handleNotifications" aria-label="Notificaciones">🔔<span v-if="notifCount > 0" class="notif-badge">{{ notifCount }}</span></button>
+          <button class="btn-danger" @click="logout" aria-label="Cerrar sesión">🚪 Cerrar Sesión</button>
         </div>
       </div>
 
       <div class="toolbar" v-if="torneo.torneos.length">
-        <select :value="torneo.torneoActual" @change="torneo.selectTorneo($event.target.value)" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border); flex:1; min-width:200px; margin:0;">
+        <select :value="torneo.torneoActual" @change="torneo.selectTorneo($event.target.value)">
           <option v-for="t in torneo.torneos" :key="t.id" :value="t.id">{{ t.nombre }}</option>
         </select>
-        <button v-if="auth.isAdmin" @click="() => torneo.crearTorneo()" class="btn-mini" style="background:#3b82f6; color:white;">+ Nuevo Torneo</button>
-        <button v-if="auth.isAdmin" @click="handleRespaldo" class="btn-mini" style="background:#22c55e; color:white;">💾 Respaldo</button>
-        <button v-if="auth.isAdmin" @click="handleRestaurar" class="btn-mini" style="background:#a855f7; color:white;">📂 Restaurar</button>
-        <button v-if="auth.isAdmin" @click="handleRecomputar" class="btn-mini" style="background:#ef4444; color:white;">🔄 Recomputar</button>
-        <button @click="handleJSON" class="btn-mini" style="background:#3b82f6; color:white;">📄 JSON</button>
-        <button @click="handleCSV" class="btn-mini" style="background:#a855f7; color:white;">📊 CSV</button>
-        <button @click="handlePDF" class="btn-mini" style="background:#f97316; color:white;">📑 PDF</button>
+        <div class="toolbar-actions">
+          <button v-if="auth.isAdmin" @click="() => torneo.crearTorneo()" class="btn-sm btn-primary">+ Nuevo Torneo</button>
+          <button v-if="auth.isAdmin" @click="handleRespaldo" class="btn-sm btn-success">💾 Respaldo</button>
+          <button v-if="auth.isAdmin" @click="handleRestaurar" class="btn-sm btn-purple">📂 Restaurar</button>
+          <button v-if="auth.isAdmin" @click="handleRecomputar" class="btn-sm btn-danger">🔄 Recomputar</button>
+          <button @click="handleJSON" class="btn-sm btn-primary">📄 JSON</button>
+          <button @click="handleCSV" class="btn-sm btn-purple">📊 CSV</button>
+          <button @click="handlePDF" class="btn-sm btn-orange">📑 PDF</button>
+        </div>
       </div>
 
       <nav class="nav-main" :class="{ open: navOpen }">

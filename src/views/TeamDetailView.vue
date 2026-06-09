@@ -79,7 +79,7 @@ onMounted(async () => {
   <section>
     <button @click="router.back()" class="btn-mini" style="background:var(--btn-bg); color:var(--text); margin-bottom:10px;">← Volver</button>
 
-    <div v-if="loading" class="box" style="text-align:center; color:var(--text-accent);">Cargando...</div>
+    <div v-if="loading" class="box spinner"><div class="spinner-ring"></div><span>Cargando...</span></div>
     <div v-else-if="!equipo" class="box" style="text-align:center; color:#ef4444; padding:30px;">Equipo no encontrado</div>
 
     <template v-else>

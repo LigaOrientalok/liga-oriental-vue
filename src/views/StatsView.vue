@@ -149,7 +149,7 @@ onMounted(async () => {
       </select>
     </div>
 
-    <div v-if="loading" class="box" style="text-align:center; color:var(--text-accent);">Cargando...</div>
+    <div v-if="loading" class="box spinner"><div class="spinner-ring"></div><span>Cargando...</span></div>
 
     <template v-else>
       <div class="box">
