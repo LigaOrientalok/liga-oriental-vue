@@ -29,6 +29,7 @@ const navItems = [
   { path: '/equipos', label: 'EQUIPOS', icon: '📋' },
   { path: '/historial', label: 'HISTORIAL', icon: '📜' },
   { path: '/misiones', label: 'MISIONES', icon: '🎯' },
+  { path: '/comparar', label: 'VS', icon: '⚔️' },
   { path: '/ranking', label: 'RANKING', icon: '📈' },
   { path: '/admin', label: 'ADMIN', icon: '⚙️' }
 ]
