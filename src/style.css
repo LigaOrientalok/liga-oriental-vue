@@ -220,30 +220,256 @@ input, select {
   pointer-events: none;
 }
 
-.ficha-ea {
-  background: linear-gradient(180deg, #1a1f2e 0%, #0d1117 100%);
-  border: 2px solid var(--gold);
-  border-radius: 12px;
-  padding: 20px;
+/* ─── FIFA-style cards ─── */
+.fifa-card {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
+  padding: 22px 16px 16px;
+  min-height: 380px;
+  border: 2px solid transparent;
+}
+.fifa-card:hover {
+  transform: translateY(-4px);
+}
+
+/* Tier background gradients */
+.fifa-bronze {
+  background: linear-gradient(180deg, #5c3a1e 0%, #8B5E3C 40%, #3d2410 100%);
+  border-color: #cd7f32;
+}
+.fifa-silver {
+  background: linear-gradient(180deg, #4a4f56 0%, #7a828e 40%, #2d3138 100%);
+  border-color: #94a3b8;
+}
+.fifa-gold {
+  background: linear-gradient(180deg, #6d5500 0%, #eab308 40%, #4a3900 100%);
+  border-color: #eab308;
+}
+.fifa-diamond {
+  background: linear-gradient(180deg, #3b1f6e 0%, #8b5cf6 40%, #1f0f3d 100%);
+  border-color: #8b5cf6;
+}
+.fifa-champion {
+  background: linear-gradient(180deg, #6d5500 0%, #eab308 40%, #4a3900 100%);
+  border-color: #eab308;
+  box-shadow: 0 0 30px rgba(234,179,8,0.5);
+}
+
+/* Glossy shine overlay */
+.fifa-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(
+    135deg,
+    transparent 35%,
+    rgba(255,255,255,0.12) 50%,
+    transparent 65%
+  );
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Rating badge (top-left) */
+.fifa-rating {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  z-index: 5;
+  font-family: 'Oswald', sans-serif;
+  font-size: 2.6rem;
+  font-weight: 900;
+  color: white;
+  line-height: 1;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+}
+
+/* Position badge (top-right) */
+.fifa-pos-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 5;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: white;
+  background: rgba(0,0,0,0.55);
+  padding: 3px 10px;
+  border-radius: 5px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* Crown for champions */
+.fifa-crown {
+  position: absolute;
+  top: 46px;
+  left: 14px;
+  z-index: 5;
+  font-size: 1.5rem;
+  filter: drop-shadow(0 0 6px rgba(234,179,8,0.8));
+}
+
+/* Player photo */
+.fifa-photo-wrap {
+  position: relative;
+  z-index: 2;
+  margin: 20px 0 6px;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.fifa-photo-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Level badge below photo */
+.fifa-level-badge {
+  position: relative;
+  z-index: 2;
+  font-size: 0.55rem;
+  font-weight: 800;
+  color: black;
+  padding: 3px 12px;
+  border-radius: 8px;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+/* Name */
+.fifa-name {
+  position: relative;
+  z-index: 2;
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+  margin: 4px 0 2px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90%;
+}
+
+/* Stats grid */
+.fifa-stats {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 16px;
+  margin-top: 6px;
+  width: 100%;
+  padding: 0 8px;
+}
+.fifa-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.75);
+  gap: 4px;
+}
+.fifa-stat .label { font-size: 0.65rem; }
+.fifa-stat .value {
+  font-weight: 700;
+  color: white;
+  font-size: 0.85rem;
+}
+
+/* Team logo chip */
+.fifa-team-logo {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  z-index: 5;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.3);
+  object-fit: cover;
+  background: rgba(0,0,0,0.3);
+}
+
+/* ─── Mini FIFA cards (PlayersView) ─── */
+.fifa-mini {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
   position: relative;
   overflow: hidden;
+  border: 1px solid transparent;
+}
+.fifa-mini:hover {
+  transform: translateY(-2px);
+}
+.fifa-mini::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.06) 50%, transparent 60%);
+  pointer-events: none;
 }
 
-.ficha-ea .rating {
-  font-family: 'Oswald', sans-serif;
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: var(--gold);
+.fifa-mini .mini-photo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
-
-.ficha-ea .pos-badge {
-  display: inline-block;
-  padding: 2px 12px;
-  border-radius: 4px;
+.fifa-mini .mini-level {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  font-size: 0.5rem;
   font-weight: 700;
-  font-size: 0.8rem;
+  color: black;
+  padding: 1px 5px;
+  border-radius: 6px;
+  z-index: 2;
 }
+.fifa-mini .mini-info {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+.fifa-mini .mini-info .name {
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fifa-mini .mini-stats {
+  display: flex;
+  gap: 10px;
+  margin-top: 3px;
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.7);
+}
+.fifa-mini .mini-stats span { font-weight: 600; color: white; }
 
 .fixture-item {
   display: flex;
@@ -424,81 +650,6 @@ input, select {
     font-size: 0.7rem;
     padding: 5px 8px;
   }
-}
-
-.card-badge {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.card-badge .rating {
-  font-family: 'Oswald', sans-serif;
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--gold);
-  line-height: 1;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-}
-
-.card-badge .pos {
-  font-size: 0.6rem;
-  font-weight: 700;
-  color: white;
-  background: rgba(0,0,0,0.6);
-  padding: 2px 8px;
-  border-radius: 4px;
-  text-transform: uppercase;
-}
-
-.perfil-ea {
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid var(--gold);
-  margin-top: 10px;
-  position: relative;
-  z-index: 2;
-}
-
-.foto-frame {
-  transition: border-color 0.3s;
-}
-
-.frame-campeon { border-color: #eab308; box-shadow: 0 0 20px rgba(234, 179, 8, 0.5); }
-.frame-diamante { border-color: #8b5cf6; box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
-.frame-oro { border-color: #eab308; box-shadow: 0 0 10px rgba(234, 179, 8, 0.3); }
-.frame-plata { border-color: #94a3b8; box-shadow: 0 0 8px rgba(148, 163, 184, 0.3); }
-.frame-bronce { border-color: #cd7f32; box-shadow: 0 0 8px rgba(205, 127, 50, 0.3); }
-
-.info-jugador-ea {
-  position: relative;
-  z-index: 2;
-  margin-top: 10px;
-}
-
-.info-jugador-ea h3 {
-  font-size: 0.95rem;
-  color: white;
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.stats-ea {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-top: 5px;
-  font-size: 0.85rem;
-  color: var(--text-muted);
 }
 
 .spinner {

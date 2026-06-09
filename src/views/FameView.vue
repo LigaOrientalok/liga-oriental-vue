@@ -1,12 +1,10 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useTorneoStore } from '../stores/torneoStore'
-import { useAuthStore } from '../stores/authStore'
 import { db } from '../lib/db'
 import { calcularXP, calcularNivel, xpParaSiguienteNivel, getNivelColor, getNivelLabel, calcularRating } from '../lib/playerStats'
 
 const torneo = useTorneoStore()
-const auth = useAuthStore()
 
 const jugadores = ref([])
 const equipos = ref([])
@@ -16,7 +14,9 @@ const selectedPlayer = ref(null)
 const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect fill='%2330363d' width='150' height='150'/%3E%3Ctext fill='%238b949e' font-family='sans-serif' font-size='14' text-anchor='middle' x='75' y='85'%3ESin Foto%3C/text%3E%3C/svg%3E"
 
 const cracks = computed(() => {
-  return [...jugadores.value].sort((a, b) => (b.mvps || 0) - (a.mvps || 0) || (b.goles || 0) - (a.goles || 0)).slice(0, 12)
+  return [...jugadores.value]
+    .sort((a, b) => (b.mvps || 0) - (a.mvps || 0) || (b.goles || 0) - (a.goles || 0))
+    .slice(0, 12)
 })
 
 const championTeams = computed(() => {
@@ -31,25 +31,24 @@ function logoEq(j) {
   return eq?.logo || ''
 }
 
-function getFrameClass(nivel, esCampeon) {
-  if (esCampeon) return 'frame-campeon'
-  if (nivel >= 12) return 'frame-diamante'
-  if (nivel >= 9) return 'frame-oro'
-  if (nivel >= 6) return 'frame-plata'
-  if (nivel >= 3) return 'frame-bronce'
+function getTierClass(nivel, esCampeon) {
+  if (esCampeon) return 'fifa-champion'
+  if (nivel >= 12) return 'fifa-diamond'
+  if (nivel >= 9) return 'fifa-gold'
+  if (nivel >= 6) return 'fifa-silver'
+  if (nivel >= 3) return 'fifa-bronze'
   return ''
 }
 
-function openPlayerDetail(j) {
-  selectedPlayer.value = j
-}
-
-function closePlayerDetail() {
-  selectedPlayer.value = null
-}
-
-function getPlayerEquipos(j) {
-  return (j.equipos || []).map(eId => equipos.value.find(e => e.id === eId)).filter(Boolean)
+function calcularAtributos(j) {
+  const gpp = j.pj > 0 ? (j.goles || 0) / j.pj : 0
+  const mvpRatio = j.pj > 0 ? (j.mvps || 0) / j.pj : 0
+  return {
+    fin: Math.min(99, Math.round(gpp * 25 + (j.goles || 0) * 0.3 + 30)),
+    est: Math.min(99, Math.round(mvpRatio * 40 + (j.mvps || 0) * 0.5 + 20)),
+    def: Math.min(99, Math.round((j.vallas_invictas || 0) * 8 + (j.posicion === 'POR' || j.posicion === 'DFC' ? 25 : 0) + 30)),
+    res: Math.min(99, Math.round((j.pj || 0) * 1.5 + 30))
+  }
 }
 
 function posMap(p) {
@@ -59,6 +58,18 @@ function posMap(p) {
 
 function pieMap(p) {
   return p === 'R' ? 'Diestro' : p === 'L' ? 'Zurdo' : p
+}
+
+function getPlayerEquipos(j) {
+  return (j.equipos || []).map(eId => equipos.value.find(e => e.id === eId)).filter(Boolean)
+}
+
+function openPlayerDetail(j) {
+  selectedPlayer.value = j
+}
+
+function closePlayerDetail() {
+  selectedPlayer.value = null
 }
 
 async function loadData() {
@@ -93,44 +104,63 @@ onMounted(async () => {
     </div>
     <div v-else class="box">
       <h3>🏆 SALÓN DE LA FAMA</h3>
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:20px; margin-top:15px;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:20px; margin-top:15px;">
         <div
           v-for="j in cracks"
           :key="j.id"
-          class="ficha-ea"
-          :class="getFrameClass(calcularNivel(calcularXP(j)), championTeams.length > 0 && (j.equipos || []).some(eId => championTeams.includes(eId)))"
-          style="cursor:pointer;"
+          class="fifa-card"
+          :class="getTierClass(
+            calcularNivel(calcularXP(j)),
+            championTeams.length > 0 && (j.equipos || []).some(eId => championTeams.includes(eId))
+          )"
           @click="openPlayerDetail(j)"
         >
-          <div class="card-badge">
-            <div class="rating">{{ calcularRating(j) }}</div>
-            <div class="pos">{{ j.posicion }}</div>
-          </div>
-          <img :src="j.foto || DEFAULT_AVATAR" loading="lazy" class="perfil-ea foto-frame">
-          <span
-            style="position:absolute;top:20px;right:20px;color:black;padding:2px 8px;border-radius:10px;font-size:0.65rem;font-weight:bold;z-index:5;"
-            :style="{ background: getNivelColor(calcularNivel(calcularXP(j))) }"
-          >
-            Lv.{{ calcularNivel(calcularXP(j)) }}
-          </span>
+          <div class="fifa-rating">{{ calcularRating(j) }}</div>
+          <div class="fifa-pos-badge">{{ j.posicion }}</div>
           <span
             v-if="championTeams.length > 0 && (j.equipos || []).some(eId => championTeams.includes(eId))"
-            style="position:absolute;top:18px;left:18px;font-size:1.8rem;z-index:5;filter:drop-shadow(0 0 6px rgba(234,179,8,0.8));"
+            class="fifa-crown"
           >👑</span>
+
+          <div class="fifa-photo-wrap">
+            <img :src="j.foto || DEFAULT_AVATAR" loading="lazy">
+          </div>
+
+          <div
+            class="fifa-level-badge"
+            :style="{ background: getNivelColor(calcularNivel(calcularXP(j))) }"
+          >
+            {{ getNivelLabel(calcularNivel(calcularXP(j))) }} · Lv.{{ calcularNivel(calcularXP(j)) }}
+          </div>
+
+          <div class="fifa-name">{{ j.nombre }}</div>
+
+          <div class="fifa-stats">
+            <div class="fifa-stat">
+              <span class="label">⚽ FIN</span>
+              <span class="value">{{ calcularAtributos(j).fin }}</span>
+            </div>
+            <div class="fifa-stat">
+              <span class="label">⭐ EST</span>
+              <span class="value">{{ calcularAtributos(j).est }}</span>
+            </div>
+            <div class="fifa-stat">
+              <span class="label">🛡️ DEF</span>
+              <span class="value">{{ calcularAtributos(j).def }}</span>
+            </div>
+            <div class="fifa-stat">
+              <span class="label">🏃 RES</span>
+              <span class="value">{{ calcularAtributos(j).res }}</span>
+            </div>
+          </div>
+
           <img
             v-if="logoEq(j)"
             :src="logoEq(j)"
             loading="lazy"
-            style="position:absolute;bottom:80px;right:10px;width:32px;height:32px;border-radius:50%;border:2px solid #eab308;background:var(--bg-input);object-fit:cover;"
+            class="fifa-team-logo"
             @error="$event.target.style.display='none'"
           >
-          <div class="info-jugador-ea">
-            <h3>{{ j.nombre }}</h3>
-            <div class="stats-ea">
-              <span>⚽ {{ j.goles || 0 }}</span>
-              <span>⭐ {{ j.mvps || 0 }}</span>
-            </div>
-          </div>
         </div>
       </div>
     </div>

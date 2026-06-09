@@ -30,6 +30,14 @@ const filteredJugadores = computed(() => {
   return result
 })
 
+function getTierClass(nivel) {
+  if (nivel >= 12) return 'fifa-gold'
+  if (nivel >= 9) return 'fifa-gold'
+  if (nivel >= 6) return 'fifa-silver'
+  if (nivel >= 3) return 'fifa-bronze'
+  return ''
+}
+
 function logoEq(j) {
   const eqId = j.equipos?.[0]
   if (!eqId) return ''
@@ -115,53 +123,43 @@ onMounted(async () => {
       <div
         v-for="j in filteredJugadores"
         :key="j.id"
+        class="fifa-mini"
+        :class="getTierClass(calcularNivel(calcularXP(j)))"
         @click="mostrarDetalleJugador(j)"
-        style="display:flex; align-items:center; gap:12px; background:var(--bg-input); border-radius:8px; padding:12px; border:1px solid var(--border); cursor:pointer; transition:border-color 0.2s;"
-        @mouseover="$event.currentTarget.style.borderColor='#eab308'"
-        @mouseout="$event.currentTarget.style.borderColor='var(--border)'"
       >
         <div style="position:relative; flex-shrink:0;">
           <img
             :src="j.foto || DEFAULT_AVATAR"
             loading="lazy"
-            style="width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid var(--border);"
+            class="mini-photo"
           />
           <span
-            style="position:absolute;bottom:-2px;right:-2px;color:black;padding:1px 6px;border-radius:8px;font-size:0.55rem;font-weight:bold;"
+            class="mini-level"
             :style="{ background: getNivelColor(calcularNivel(calcularXP(j))) }"
           >Lv.{{ calcularNivel(calcularXP(j)) }}</span>
         </div>
-        <div style="flex:1; min-width:0;">
-          <div style="color:white; font-weight:600; font-size:0.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ j.nombre }}</div>
-          <div style="display:flex; gap:6px; margin-top:4px; flex-wrap:wrap;">
+        <div class="mini-info">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <div class="name" style="flex:1;">{{ j.nombre }}</div>
             <span
-              style="padding:1px 8px; border-radius:4px; font-size:0.7rem; font-weight:600; color:white;"
+              style="padding:1px 8px; border-radius:4px; font-size:0.65rem; font-weight:600; color:white; flex-shrink:0;"
               :style="{ background: posColors[j.posicion] || 'var(--border)' }"
             >{{ posMap[j.posicion] || j.posicion }}</span>
-            <img
-              v-if="logoEq(j)"
-              :src="logoEq(j)"
-              loading="lazy"
-              :title="nombreEq(j.equipos?.[0])"
-              style="width:16px;height:16px;border-radius:50%;object-fit:cover;"
-              @error="$event.target.style.display='none'"
-            >
+          </div>
+          <div class="mini-stats">
+            <span style="color:#22c55e;">⚽ {{ j.goles || 0 }}</span>
+            <span style="color:#f97316;">⭐ {{ j.mvps || 0 }}</span>
+            <span style="color:#eab308;">📊 {{ calcularRating(j) }}</span>
           </div>
         </div>
-        <div style="display:flex; gap:8px; flex-shrink:0;">
-          <div style="text-align:center; min-width:32px;">
-            <div style="font-size:0.95rem; font-weight:bold; color:#22c55e;">{{ j.goles || 0 }}</div>
-            <div style="font-size:0.6rem; color:var(--text-muted);">⚽</div>
-          </div>
-          <div style="text-align:center; min-width:32px;">
-            <div style="font-size:0.95rem; font-weight:bold; color:#f97316;">{{ j.mvps || 0 }}</div>
-            <div style="font-size:0.6rem; color:var(--text-muted);">⭐</div>
-          </div>
-          <div style="text-align:center; min-width:32px;">
-            <div style="font-size:0.95rem; font-weight:bold; color:#eab308;">{{ calcularRating(j) }}</div>
-            <div style="font-size:0.6rem; color:var(--text-muted);">📊</div>
-          </div>
-        </div>
+        <img
+          v-if="logoEq(j)"
+          :src="logoEq(j)"
+          loading="lazy"
+          :title="nombreEq(j.equipos?.[0])"
+          style="width:22px;height:22px;border-radius:50%;object-fit:cover;flex-shrink:0;position:relative;z-index:1;border:1px solid rgba(255,255,255,0.2);"
+          @error="$event.target.style.display='none'"
+        >
       </div>
     </div>
 
