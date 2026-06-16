@@ -52,6 +52,7 @@ serve(async (req) => {
           currency_id: 'UYU',
           unit_price: Number(monto)
         }],
+        notification_url: `${SUPABASE_URL}/functions/v1/mp-webhook`,
         back_urls: {
           success: `${req.headers.get('origin') || ''}/delegado`,
           failure: `${req.headers.get('origin') || ''}/delegado`,

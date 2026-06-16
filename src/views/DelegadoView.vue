@@ -156,6 +156,29 @@ watch(() => torneo.torneoActual, async () => {
 })
 
 onMounted(async () => {
+  const params = new URLSearchParams(window.location.search)
+  const mpStatus = params.get('status')
+  const mpPaymentId = params.get('payment_id')
+
+  if (mpStatus && mpPaymentId) {
+    if (mpStatus === 'approved') {
+      await supabase.from('pagos').update({
+        estado: 'aprobado',
+        mp_payment_id: mpPaymentId,
+        mp_status: 'approved',
+        fecha_pago: new Date().toISOString()
+      }).eq('mp_preference_id', params.get('preference_id') || '')
+      toast.success('✅ Pago aprobado')
+    } else if (mpStatus === 'pending') {
+      toast.info('⏳ Pago pendiente')
+    } else {
+      toast.error('❌ Pago rechazado o cancelado')
+    }
+
+    const cleanUrl = window.location.pathname
+    window.history.replaceState({}, '', cleanUrl)
+  }
+
   if (torneo.torneoActual) await cargarDatos()
 })
 </script>
