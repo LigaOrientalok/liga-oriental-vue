@@ -367,5 +367,32 @@ export const db = {
   async deleteSponsor(id) {
     const { error } = await supabase.from('sponsors').delete().eq('id', id)
     if (error) handleError('Error deleting sponsor:', error)
+  },
+
+  // Liga Media
+  async getMedia() {
+    const { data, error } = await supabase.from('liga_media').select('*').order('created_at', { ascending: false })
+    if (error) handleError('Error fetching media:', error)
+    return data || []
+  },
+
+  async createMedia(titulo, descripcion, tipo, contenido) {
+    const user = (await supabase.auth.getUser()).data.user
+    const { data, error } = await supabase.from('liga_media').insert({
+      titulo, descripcion, tipo, contenido, uploaded_by: user?.id || null
+    }).select().single()
+    if (error) handleError('Error creating media:', error)
+    return data
+  },
+
+  async updateMedia(id, updates) {
+    const { data, error } = await supabase.from('liga_media').update(updates).eq('id', id).select().single()
+    if (error) handleError('Error updating media:', error)
+    return data
+  },
+
+  async deleteMedia(id) {
+    const { error } = await supabase.from('liga_media').delete().eq('id', id)
+    if (error) handleError('Error deleting media:', error)
   }
 }
