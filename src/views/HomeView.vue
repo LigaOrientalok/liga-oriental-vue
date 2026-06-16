@@ -88,6 +88,7 @@ watch(() => torneo.torneoActual, async () => { try { await loadData() } catch (e
 onMounted(async () => { try { await loadData() } catch (e) { console.error(e) } })
 
 const mediaItems = ref([])
+const showUploadForm = ref(false)
 const subirMediaTitulo = ref('')
 const subirMediaDesc = ref('')
 const subirMediaTipo = ref('imagen')
@@ -124,6 +125,7 @@ async function subirMedia() {
     subirMediaTipo.value = 'imagen'
     subirMediaArchivo.value = null
     subirMediaPreview.value = null
+    showUploadForm.value = false
     await cargarMedia()
   } catch (e) {
     toast.error('Error al subir media')
@@ -239,13 +241,13 @@ onMounted(() => { cargarMedia() })
     <div class="box" style="margin-top:15px;">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
         <h4 style="color:#eab308; margin:0;">📸 Galería de la Liga</h4>
-        <button v-if="auth.isApproved" class="btn-mini" style="background:#eab308; color:black;" @click="subirMediaTitulo = prompt('Título:', '') || subirMediaTitulo; if(subirMediaTitulo) subirMediaTipo = 'imagen'; subirMediaPreview = null; subirMediaArchivo = null">
-          📤 Subir
+        <button v-if="auth.isApproved" class="btn-mini" style="background:#eab308; color:black;" @click="showUploadForm = !showUploadForm">
+          {{ showUploadForm ? '✕ Cerrar' : '📤 Subir' }}
         </button>
       </div>
 
       <!-- Formulario de subida -->
-      <div v-if="subirMediaTitulo && auth.isApproved" style="background:var(--bg-input); border-radius:8px; padding:15px; margin-bottom:15px; border-left:4px solid #eab308;">
+      <div v-if="showUploadForm && auth.isApproved" style="background:var(--bg-input); border-radius:8px; padding:15px; margin-bottom:15px; border-left:4px solid #eab308;">
         <label class="label-accent">Título:</label>
         <input type="text" v-model="subirMediaTitulo" placeholder="Título" />
         <label class="label-accent">Descripción (opcional):</label>
@@ -270,7 +272,7 @@ onMounted(() => { cargarMedia() })
           <button class="btn-main" @click="subirMedia" :disabled="subiendoMedia" style="padding:8px 20px; font-size:0.85rem;">
             {{ subiendoMedia ? '⏳' : '✅ Subir' }}
           </button>
-          <button class="btn-mini" style="background:#6b7280; color:white;" @click="subirMediaTitulo = ''; subirMediaPreview = null; subirMediaArchivo = null">Cancelar</button>
+          <button class="btn-mini" style="background:#6b7280; color:white;" @click="showUploadForm = false">Cancelar</button>
         </div>
       </div>
 
