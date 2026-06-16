@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { supabase } from '../lib/supabase'
 import { useAuthStore } from '../stores/authStore'
 import { useTorneoStore } from '../stores/torneoStore'
 import { useToastStore } from '../stores/toastStore'
@@ -108,47 +109,36 @@ async function generarPagoMP() {
   if (!mpConcepto.value.trim()) return toast.error('Ingresá un concepto')
   mpGenerando.value = true
   try {
-    const pago = await db.createPago(
-      torneo.torneoActual,
-      auth.user.id,
-      equipoId.value,
-      mpConcepto.value.trim(),
-      mpMonto.value
-    )
-    if (!pago) { toast.error('Error al crear el pago'); return }
+    const session = await supabase.auth.getSession()
+    const token = session?.data?.session?.access_token
+    if (!token) { toast.error('Sesión expirada'); return }
 
-    const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_MP_ACCESS_TOKEN}`
-      },
-      body: JSON.stringify({
-        items: [{
-          title: mpConcepto.value.trim(),
-          quantity: 1,
-          currency_id: 'ARS',
-          unit_price: Number(mpMonto.value)
-        }],
-        back_urls: {
-          success: window.location.origin + '/delegado',
-          failure: window.location.origin + '/delegado',
-          pending: window.location.origin + '/delegado'
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mp-create-preference`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        auto_return: 'approved',
-        external_reference: pago.id.toString()
-      })
-    })
-    const pref = await response.json()
-    if (pref.id) {
-      await db.updatePago(pago.id, { mp_preference_id: pref.id })
-      window.open(pref.init_point, '_blank')
+        body: JSON.stringify({
+          torneo_id: torneo.torneoActual,
+          concepto: mpConcepto.value.trim(),
+          monto: mpMonto.value,
+          equipo_id: equipoId.value
+        })
+      }
+    )
+    const result = await response.json()
+    if (result.init_point) {
+      window.open(result.init_point, '_blank')
       toast.success('✅ Redirigiendo a Mercado Pago...')
+      await cargarDatos()
     } else {
-      toast.error('Error al crear el pago en Mercado Pago')
+      toast.error('Error al crear el pago: ' + (result.error || 'Error desconocido'))
     }
   } catch (e) {
-    toast.error('Error de conexión con Mercado Pago')
+    toast.error('Error de conexión')
   } finally {
     mpGenerando.value = false
   }
