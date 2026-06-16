@@ -72,6 +72,7 @@ const tabs = [
   { id: 'equipos', label: 'Equipos' },
   { id: 'jugadores', label: 'Jugadores' },
   { id: 'sanciones', label: 'Sanciones' },
+  { id: 'pagos', label: 'Pagos' },
   { id: 'torneos', label: 'Torneos' },
   { id: 'config', label: 'Configuración' },
 ]
@@ -88,6 +89,7 @@ async function cargarUsuarios() {
     const { data, error } = await supabase.from('usuarios').select('*').order('fecha_registro', { ascending: false })
     if (error) throw error
     usuarios.value = data || []
+    await cargarEquipos()
   } catch (e) {
     toast.error(e.message)
   } finally {
@@ -95,16 +97,31 @@ async function cargarUsuarios() {
   }
 }
 
-async function cambiarRol(usuarioId, nuevoRol) {
+async function cambiarRol(usuarioId, nuevoRol, equipoIdVal) {
   try {
     await soloAdmin()
-    const { error } = await supabase.from('usuarios').update({ rol: nuevoRol }).eq('id', usuarioId)
+    const updates = { rol: nuevoRol }
+    if (nuevoRol === 'delegado') {
+      updates.equipo_id = equipoIdVal || null
+    } else {
+      updates.equipo_id = null
+    }
+    const { error } = await supabase.from('usuarios').update(updates).eq('id', usuarioId)
     if (error) throw error
     toast.success('✅ Rol actualizado')
     await cargarUsuarios()
   } catch (e) {
     toast.error('Error al cambiar rol')
   }
+}
+
+const delegadoEquipoSel = ref({})
+
+function onRolChange(u, nuevoRol) {
+  if (nuevoRol === 'delegado' && !delegadoEquipoSel.value[u.id]) {
+    toast.warning('Seleccioná un equipo para el delegado')
+  }
+  cambiarRol(u.id, nuevoRol, delegadoEquipoSel.value[u.id] || null)
 }
 
 async function cambiarEstado(usuarioId, nuevoEstado) {
@@ -215,6 +232,81 @@ async function eliminarSancion(id) {
   } catch (e) {
     toast.error('Error al eliminar sanción')
   }
+}
+
+// Pagos
+const pagos = ref([])
+const loadingPagos = ref(false)
+const pagoConcepto = ref('')
+const pagoMonto = ref(0)
+const pagoUsuarioId = ref('')
+const pagoEquipoId = ref('')
+
+async function cargarPagos() {
+  if (!torneo.torneoActual) return
+  loadingPagos.value = true
+  try {
+    pagos.value = await db.getPagos(torneo.torneoActual)
+  } finally {
+    loadingPagos.value = false
+  }
+}
+
+async function crearPagoAdmin() {
+  if (!torneo.torneoActual) return toast.error('Seleccioná un torneo')
+  if (!pagoConcepto.value.trim() || !pagoMonto.value || pagoMonto.value <= 0) return toast.error('Completá concepto y monto')
+  if (!pagoUsuarioId.value) return toast.error('Seleccioná un usuario')
+  saving.value = true
+  try {
+    const pago = await db.createPago(
+      torneo.torneoActual,
+      pagoUsuarioId.value,
+      pagoEquipoId.value || null,
+      pagoConcepto.value.trim(),
+      pagoMonto.value
+    )
+    if (pago) {
+      toast.success('✅ Pago registrado')
+      pagoConcepto.value = ''
+      pagoMonto.value = 0
+      pagoUsuarioId.value = ''
+      pagoEquipoId.value = ''
+      await cargarPagos()
+    }
+  } catch (e) {
+    toast.error('Error al crear pago')
+  } finally {
+    saving.value = false
+  }
+}
+
+async function togglePagoEstado(pagoId, estadoActual) {
+  try {
+    const nuevoEstado = estadoActual === 'pendiente' ? 'pagado' : 'pendiente'
+    const updates = { estado: nuevoEstado }
+    if (nuevoEstado === 'pagado') updates.fecha_pago = new Date().toISOString()
+    await db.updatePago(pagoId, updates)
+    toast.success( nuevoEstado === 'pagado' ? '✅ Pago marcado como pagado' : '🔄 Pago revertido')
+    await cargarPagos()
+  } catch (e) {
+    toast.error('Error al actualizar pago')
+  }
+}
+
+async function eliminarPagoAdmin(id) {
+  if (!await waitConfirm('¿Eliminar este pago?')) return
+  try {
+    await db.deletePago(id)
+    toast.success('🗑️ Pago eliminado')
+    await cargarPagos()
+  } catch (e) {
+    toast.error('Error al eliminar pago')
+  }
+}
+
+function getNombreUsuario(id) {
+  const u = usuarios.value.find(x => x.id === id)
+  return u?.email || 'Desconocido'
 }
 
 // Team management
@@ -423,6 +515,7 @@ onMounted(async () => {
   if (torneo.torneoActual) {
     await cargarEquipos()
     await cargarSanciones()
+    await cargarPagos()
   }
 })
 
@@ -430,6 +523,7 @@ watch(() => torneo.torneoActual, async () => {
   if (torneo.torneoActual) {
     await cargarEquipos()
     await cargarSanciones()
+    await cargarPagos()
   }
 })
 </script>
@@ -483,17 +577,34 @@ watch(() => torneo.torneoActual, async () => {
             </thead>
             <tbody>
               <tr v-for="u in usuarios" :key="u.id" style="border-bottom:1px solid var(--border);">
-                <td style="padding:8px;">{{ u.email }}</td>
+                <td style="padding:8px;">
+                  <div>{{ u.email }}</div>
+                  <div v-if="u.rol === 'delegado'" style="font-size:0.75rem; color:#8b5cf6; margin-top:2px;">
+                    🏷️ {{ equipos.find(e => e.id === u.equipo_id)?.nombre || 'Sin equipo' }}
+                  </div>
+                </td>
                 <td style="padding:8px; text-align:center;">
-                  <select
-                    :value="u.rol"
-                    @change="cambiarRol(u.id, $event.target.value)"
-                    style="padding:4px; background:var(--bg-input); color:white; border:1px solid var(--border); border-radius:4px; font-size:0.8rem;"
-                  >
-                    <option value="usuario">Usuario</option>
-                    <option value="arbitro">Árbitro</option>
-                    <option value="admin">Admin</option>
-                  </select>
+                  <div>
+                    <select
+                      :value="u.rol"
+                      @change="onRolChange(u, $event.target.value)"
+                      style="padding:4px; background:var(--bg-input); color:white; border:1px solid var(--border); border-radius:4px; font-size:0.8rem;"
+                    >
+                      <option value="usuario">Usuario</option>
+                      <option value="arbitro">Árbitro</option>
+                      <option value="delegado">Delegado</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                    <select
+                      v-if="u.rol === 'delegado'"
+                      :value="u.equipo_id"
+                      @change="cambiarRol(u.id, 'delegado', $event.target.value || null)"
+                      style="margin-top:4px; padding:4px; background:var(--bg-input); color:white; border:1px solid var(--border); border-radius:4px; font-size:0.75rem; width:100%;"
+                    >
+                      <option value="">Sin equipo</option>
+                      <option v-for="eq in equipos" :key="eq.id" :value="eq.id">{{ eq.nombre }}</option>
+                    </select>
+                  </div>
                 </td>
                 <td style="padding:8px; text-align:center;">
                   <select
@@ -683,6 +794,82 @@ watch(() => torneo.torneoActual, async () => {
               <p style="margin:6px 0 0; color:var(--text-accent); font-size:0.85rem;">{{ s.motivo }}</p>
               <div style="margin-top:4px; font-size:0.75rem; color:var(--text-muted);">
                 {{ s.fecha_inicio ? new Date(s.fecha_inicio).toLocaleDateString('es-ES') : '-' }} → {{ s.fecha_fin ? new Date(s.fecha_fin).toLocaleDateString('es-ES') : 'indefinido' }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGOS TAB -->
+      <div v-if="activeTab === 'pagos'" style="margin-top:15px;">
+        <div v-if="!torneo.torneoActual" style="color:#f97316; padding:10px;">
+          Seleccioná un torneo primero
+        </div>
+        <div v-else style="display:grid; grid-template-columns: 1fr 2fr; gap:20px;">
+          <div class="box" style="border-left:4px solid #8b5cf6;">
+            <h3 style="color:#8b5cf6; margin-bottom:15px;">💰 Nuevo Pago</h3>
+            <label class="label-accent">Usuario:</label>
+            <select v-model="pagoUsuarioId" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
+              <option value="">Seleccionar...</option>
+              <option v-for="u in usuarios" :key="u.id" :value="u.id">{{ u.email }}</option>
+            </select>
+            <label class="label-accent">Equipo (opcional):</label>
+            <select v-model="pagoEquipoId" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
+              <option value="">Sin equipo</option>
+              <option v-for="eq in equipos" :key="eq.id" :value="eq.id">{{ eq.nombre }}</option>
+            </select>
+            <label class="label-accent">Concepto:</label>
+            <select v-model="pagoConcepto" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
+              <option value="">Seleccionar...</option>
+              <option value="Cuota mensual">Cuota mensual</option>
+              <option value="Inscripción">Inscripción</option>
+              <option value="Multa">Multa</option>
+              <option value="Fondo de equipo">Fondo de equipo</option>
+            </select>
+            <label class="label-accent">Monto ($):</label>
+            <input type="number" v-model.number="pagoMonto" min="1" placeholder="Ej: 5000" />
+            <button class="btn-main" @click="crearPagoAdmin" :disabled="saving" style="background:#8b5cf6; color:white;">
+              {{ saving ? '⏳ Guardando...' : '✅ REGISTRAR PAGO' }}
+            </button>
+          </div>
+
+          <div class="box">
+            <h3 style="color:#eab308; margin-bottom:15px;">
+              📋 Historial de Pagos ({{ pagos.length }})
+            </h3>
+            <div v-if="loadingPagos" class="spinner"><div class="spinner-ring"></div><span>Cargando...</span></div>
+            <div v-else-if="pagos.length === 0" style="color:var(--text-muted); text-align:center; padding:20px;">No hay pagos registrados</div>
+            <div v-else v-for="p in pagos" :key="p.id"
+              style="background:var(--bg-input); border-radius:8px; padding:12px; margin-bottom:8px; border-left:4px solid;"
+              :style="{ borderLeftColor: p.estado === 'pagado' ? '#22c55e' : p.estado === 'pendiente' ? '#f97316' : '#ef4444' }"
+            >
+              <div style="display:flex; justify-content:space-between; align-items:start;">
+                <div>
+                  <strong style="color:white;">{{ p.concepto }}</strong>
+                  <span style="display:block; color:var(--text-muted); font-size:0.75rem;">
+                    {{ getNombreUsuario(p.usuario_id) }}
+                    <span v-if="p.equipo_id"> | {{ equipos.find(e => e.id === p.equipo_id)?.nombre || '' }}</span>
+                  </span>
+                  <span style="display:block; color:var(--text-muted); font-size:0.75rem;">
+                    {{ new Date(p.fecha_creacion).toLocaleDateString('es-ES') }}
+                  </span>
+                </div>
+                <div style="text-align:right;">
+                  <strong style="color:#22c55e; font-size:1.1rem;">${{ Number(p.monto).toLocaleString('es-AR') }}</strong>
+                  <div style="display:flex; gap:5px; margin-top:5px;">
+                    <button
+                      @click="togglePagoEstado(p.id, p.estado)"
+                      class="btn-mini"
+                      :style="{ background: p.estado === 'pendiente' ? '#22c55e' : '#f97316', color: 'white', padding: '4px 8px', fontSize: '0.65rem' }"
+                    >
+                      {{ p.estado === 'pendiente' ? '✓ Pagar' : '↩ Revertir' }}
+                    </button>
+                    <button @click="eliminarPagoAdmin(p.id)" class="btn-mini" style="background:#ef4444; color:white; padding:4px 8px; font-size:0.65rem;">🗑️</button>
+                  </div>
+                  <span style="display:block; font-size:0.7rem; text-transform:uppercase; margin-top:2px;"
+                    :style="{ color: p.estado === 'pagado' ? '#22c55e' : '#f97316' }"
+                  >{{ p.estado }}</span>
+                </div>
               </div>
             </div>
           </div>

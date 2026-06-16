@@ -304,5 +304,42 @@ export const db = {
     const result = await handleError('Error updating config:', error)
     if (result?.error) return null
     return data?.[0]
+  },
+
+  // Pagos
+  async getPagos(torneoId) {
+    const { data, error } = await supabase.from('pagos').select('*').eq('torneo_id', torneoId)
+    const result = await handleError('Error fetching pagos:', error)
+    if (result?.error) return []
+    return data || []
+  },
+
+  async getPagosByEquipo(equipoId) {
+    const { data, error } = await supabase.from('pagos').select('*').eq('equipo_id', equipoId)
+    const result = await handleError('Error fetching pagos de equipo:', error)
+    if (result?.error) return []
+    return data || []
+  },
+
+  async createPago(torneoId, usuarioId, equipoId, concepto, monto) {
+    const { data, error } = await supabase.from('pagos').insert([{
+      torneo_id: torneoId, usuario_id: usuarioId, equipo_id: equipoId,
+      concepto, monto, estado: 'pendiente'
+    }]).select()
+    const result = await handleError('Error creating pago:', error)
+    if (result?.error) return null
+    return data?.[0]
+  },
+
+  async updatePago(id, updates) {
+    const { data, error } = await supabase.from('pagos').update(updates).eq('id', id).select()
+    const result = await handleError('Error updating pago:', error)
+    if (result?.error) return null
+    return data?.[0]
+  },
+
+  async deletePago(id) {
+    const { error } = await supabase.from('pagos').delete().eq('id', id)
+    if (error) handleError('Error deleting pago:', error)
   }
 }

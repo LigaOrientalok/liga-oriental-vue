@@ -33,11 +33,13 @@ const navItems = [
   { path: '/misiones', label: 'MISIONES', icon: '🎯' },
   { path: '/comparar', label: 'VS', icon: '⚔️' },
   { path: '/ranking', label: 'RANKING', icon: '📈' },
+  { path: '/delegado', label: 'DELEGADO', icon: '👔' },
   { path: '/admin', label: 'ADMIN', icon: '⚙️' }
 ]
 
 const visibleNavItems = computed(() => {
   if (auth.isAdmin) return navItems
+  if (auth.isDelegado) return navItems.filter(n => !['/admin'].includes(n.path))
   if (auth.isArbitro) return navItems.filter(n => n.path !== '/admin')
   return navItems.filter(n => !['/admin'].includes(n.path))
 })

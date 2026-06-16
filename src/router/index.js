@@ -13,6 +13,7 @@ const routes = [
   { path: '/historial', name: 'Historial', component: () => import('../views/HistoryView.vue') },
   { path: '/misiones', name: 'Misiones', component: () => import('../views/MisionesView.vue') },
   { path: '/admin', name: 'Admin', component: () => import('../views/AdminView.vue'), meta: { requiresAuth: true } },
+  { path: '/delegado', name: 'Delegado', component: () => import('../views/DelegadoView.vue'), meta: { requiresDelegado: true } },
   { path: '/jugador/:id', name: 'JugadorDetail', component: () => import('../views/PlayerDetailView.vue') },
   { path: '/equipo/:id', name: 'TeamDetail', component: () => import('../views/TeamDetailView.vue') },
   { path: '/comparar', name: 'Comparar', component: () => import('../views/CompareView.vue') },
@@ -26,9 +27,12 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
+  const auth = useAuthStore()
   if (to.meta.requiresAuth) {
-    const auth = useAuthStore()
     if (!auth.isLoggedIn || !auth.isAdmin) return next('/')
+  }
+  if (to.meta.requiresDelegado) {
+    if (!auth.isLoggedIn || !(auth.isAdmin || auth.isDelegado)) return next('/')
   }
   next()
 })

@@ -13,8 +13,9 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     isAdmin: (state) => state.userData?.rol === 'admin',
     isArbitro: (state) => state.userData?.rol === 'arbitro',
+    isDelegado: (state) => state.userData?.rol === 'delegado',
     isLoggedIn: (state) => !!state.session,
-    isApproved: (state) => state.userData?.estado === 'aprobado' || state.userData?.rol === 'admin'
+    isApproved: (state) => state.userData?.estado === 'aprobado' || state.userData?.rol === 'admin' || state.userData?.rol === 'delegado'
   },
 
   actions: {
