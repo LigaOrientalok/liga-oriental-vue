@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from './stores/authStore'
 import { useTorneoStore } from './stores/torneoStore'
 import { useThemeStore } from './stores/themeStore'
+import { useConfigStore } from './stores/configStore'
 import LoginForm from './components/LoginForm.vue'
 import IntroOverlay from './components/IntroOverlay.vue'
 import { exportarJSON, exportarCSV, exportarPDF, respaldarDatos, recomputarEstadisticas, restaurarRespaldo } from './lib/export'
@@ -15,6 +16,7 @@ const route = useRoute()
 const auth = useAuthStore()
 const torneo = useTorneoStore()
 const themeStore = useThemeStore()
+const config = useConfigStore()
 
 const navOpen = ref(false)
 
@@ -92,6 +94,7 @@ async function verificarNotificaciones() {
 }
 
 onMounted(async () => {
+  await config.loadConfig()
   await auth.init()
   if (auth.isLoggedIn) {
     await torneo.init()
@@ -110,7 +113,7 @@ onUnmounted(() => {
   <template v-if="auth.loading">
     <div class="spinner" style="min-height:100vh;">
       <div class="spinner-ring" style="width:48px;height:48px;border-width:5px;"></div>
-      <span style="color:var(--gold); font-size:1.2rem;">Cargando Liga Oriental...</span>
+      <span style="color:var(--gold); font-size:1.2rem;">Cargando {{ config.titulo }}...</span>
     </div>
   </template>
 
@@ -145,10 +148,13 @@ onUnmounted(() => {
   <template v-else>
     <header>
       <div class="header-row">
-        <h1>LIGA <span class="gold">ORIENTAL</span></h1>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <img v-if="config.logo_url" :src="config.logo_url" style="height:36px; width:36px; border-radius:50%; object-fit:cover;" />
+          <h1>{{ config.titulo }}</h1>
+        </div>
         <div class="header-actions">
           <button class="hamburger" @click="navOpen = !navOpen" aria-label="Abrir menú de navegación">☰</button>
-          <button class="btn-icon" @click="themeStore.toggleTheme()" aria-label="Cambiar tema">{{ themeStore.theme === 'dark' ? '☀️' : '🌙' }}</button>
+          <button class="btn-icon" @click="themeStore.toggleTheme(); config.applyBackground()" aria-label="Cambiar tema">{{ themeStore.theme === 'dark' ? '☀️' : '🌙' }}</button>
           <button class="btn-icon" @click="router.push('/admin')" aria-label="Perfil">👤</button>
           <button class="btn-icon btn-notif" @click="handleNotifications" aria-label="Notificaciones">🔔<span v-if="notifCount > 0" class="notif-badge">{{ notifCount }}</span></button>
           <button class="btn-danger" @click="logout" aria-label="Cerrar sesión">🚪 Cerrar Sesión</button>

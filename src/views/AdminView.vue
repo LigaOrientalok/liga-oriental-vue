@@ -6,6 +6,7 @@ import { useTorneoStore } from '../stores/torneoStore'
 import { useToastStore } from '../stores/toastStore'
 import { db } from '../lib/db'
 import { calcularRating } from '../lib/playerStats'
+import { useConfigStore } from '../stores/configStore'
 
 const auth = useAuthStore()
 const torneo = useTorneoStore()
@@ -16,6 +17,7 @@ const activeTab = ref('usuarios')
 const usuarios = ref([])
 const equipos = ref([])
 const jugadores = ref([])
+const configStore = useConfigStore()
 const loading = ref(false)
 const saving = ref(false)
 
@@ -71,6 +73,7 @@ const tabs = [
   { id: 'jugadores', label: 'Jugadores' },
   { id: 'sanciones', label: 'Sanciones' },
   { id: 'torneos', label: 'Torneos' },
+  { id: 'config', label: 'Configuración' },
 ]
 
 async function soloAdmin() {
@@ -332,6 +335,64 @@ function getEquiposNombres(j) {
 const newTorneoNombre = ref('')
 const newTorneoDesc = ref('')
 
+// Config state
+const configTitulo = ref(configStore.titulo)
+const configLogoFile = ref(null)
+const configLogoPreview = ref(configStore.logo_url)
+const configColorPrimario = ref(configStore.color_primario)
+const configColorSecundario = ref(configStore.color_secundario)
+const configFondoOscuro = ref(configStore.fondo_oscuro)
+const configFondoClaro = ref(configStore.fondo_claro)
+const configSaving = ref(false)
+
+async function cargarConfig() {
+  configTitulo.value = configStore.titulo
+  configLogoPreview.value = configStore.logo_url
+  configColorPrimario.value = configStore.color_primario
+  configColorSecundario.value = configStore.color_secundario
+  configFondoOscuro.value = configStore.fondo_oscuro
+  configFondoClaro.value = configStore.fondo_claro
+}
+
+async function guardarConfig() {
+  configSaving.value = true
+  try {
+    let logo_url = configStore.logo_url
+    if (configLogoFile.value) {
+      const reader = new FileReader()
+      logo_url = await new Promise((resolve, reject) => {
+        reader.onload = async (e) => {
+          try {
+            const compressed = await comprimirImagen(e.target.result, 300)
+            resolve(compressed)
+          } catch { reject(new Error('Error al comprimir imagen')) }
+        }
+        reader.onerror = reject
+        reader.readAsDataURL(configLogoFile.value)
+      })
+    }
+    const ok = await configStore.saveConfig({
+      titulo: configTitulo.value.trim() || 'Liga Oriental',
+      logo_url,
+      color_primario: configColorPrimario.value,
+      color_secundario: configColorSecundario.value,
+      fondo_oscuro: configFondoOscuro.value,
+      fondo_claro: configFondoClaro.value
+    })
+    if (ok) {
+      toast.success('✅ Configuración guardada')
+      configLogoFile.value = null
+      configLogoPreview.value = logo_url
+    } else {
+      toast.error('Error al guardar configuración')
+    }
+  } catch (e) {
+    toast.error('Error al guardar configuración')
+  } finally {
+    configSaving.value = false
+  }
+}
+
 async function crearTorneo() {
   if (!newTorneoNombre.value.trim()) return toast.error('El nombre es obligatorio')
   saving.value = true
@@ -385,7 +446,7 @@ watch(() => torneo.torneoActual, async () => {
           :key="tab.id"
           class="btn-mini"
           :style="{ background: activeTab === tab.id ? '#eab308' : 'var(--border)', color: activeTab === tab.id ? 'black' : 'white' }"
-          @click="activeTab = tab.id; if(tab.id === 'usuarios') cargarUsuarios(); if((tab.id === 'equipos' || tab.id === 'jugadores') && torneo.torneoActual) cargarEquipos(); if(tab.id === 'sanciones' && torneo.torneoActual) cargarSanciones()"
+          @click="activeTab = tab.id; if(tab.id === 'usuarios') cargarUsuarios(); if((tab.id === 'equipos' || tab.id === 'jugadores') && torneo.torneoActual) cargarEquipos(); if(tab.id === 'sanciones' && torneo.torneoActual) cargarSanciones(); if(tab.id === 'config') cargarConfig()"
         >
           {{ tab.label }}
         </button>
@@ -625,6 +686,49 @@ watch(() => torneo.torneoActual, async () => {
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- CONFIG TAB -->
+      <div v-if="activeTab === 'config'" style="margin-top:15px;">
+        <div class="box" style="max-width:550px;">
+          <h3 style="color:#eab308; margin-bottom:15px;">⚙️ Configuración General</h3>
+          <label class="label-accent">Título de la app:</label>
+          <input type="text" v-model="configTitulo" placeholder="Liga Oriental" />
+
+          <label class="label-accent">Logo principal:</label>
+          <input type="file" accept="image/*" @change="e => { configLogoFile = e.target.files[0]; configLogoPreview = URL.createObjectURL(e.target.files[0]) }" />
+          <div v-if="configLogoPreview" style="margin-top:8px;">
+            <img :src="configLogoPreview" style="max-width:120px; max-height:120px; border-radius:8px; border:2px solid var(--border); object-fit:cover;" />
+          </div>
+
+          <label class="label-accent" style="margin-top:10px;">Color primario (acento):</label>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <input type="color" v-model="configColorPrimario" style="width:48px;height:48px;border:none;cursor:pointer;background:none;" />
+            <code style="color:var(--text-muted); font-size:0.85rem;">{{ configColorPrimario }}</code>
+          </div>
+
+          <label class="label-accent">Color secundario:</label>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <input type="color" v-model="configColorSecundario" style="width:48px;height:48px;border:none;cursor:pointer;background:none;" />
+            <code style="color:var(--text-muted); font-size:0.85rem;">{{ configColorSecundario }}</code>
+          </div>
+
+          <label class="label-accent">Fondo modo oscuro:</label>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <input type="color" v-model="configFondoOscuro" style="width:48px;height:48px;border:none;cursor:pointer;background:none;" />
+            <code style="color:var(--text-muted); font-size:0.85rem;">{{ configFondoOscuro }}</code>
+          </div>
+
+          <label class="label-accent">Fondo modo claro:</label>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <input type="color" v-model="configFondoClaro" style="width:48px;height:48px;border:none;cursor:pointer;background:none;" />
+            <code style="color:var(--text-muted); font-size:0.85rem;">{{ configFondoClaro }}</code>
+          </div>
+
+          <button class="btn-main" @click="guardarConfig" :disabled="configSaving" style="margin-top:15px; width:100%;">
+            {{ configSaving ? '⏳ Guardando...' : '💾 GUARDAR CONFIGURACIÓN' }}
+          </button>
         </div>
       </div>
 

@@ -311,7 +311,8 @@ onMounted(async () => { if (torneo.torneoActual) try { await loadData() } catch 
           <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap:8px;">
             <div v-for="m in missions" :key="m.id"
               style="display:flex; align-items:center; gap:8px; padding:10px; border-radius:8px; font-size:0.85rem;"
-              :style="{ background: m.completada ? '#22c55e22' : '#21262d', opacity: m.completada ? 1 : 0.5 }">
+              :style="{ background: m.completada ? '#22c55e22' : '#21262d', opacity: m.completada ? 1 : 0.5 }"
+>
               <span style="font-size:1.2rem;">{{ m.icon }}</span>
               <span style="flex:1;" :style="{ color: m.completada ? '#22c55e' : 'var(--text-muted)' }">{{ m.label }}</span>
               <span style="font-size:0.75rem; font-weight:bold;" :style="{ color: m.completada ? '#22c55e' : 'var(--text-muted)' }">

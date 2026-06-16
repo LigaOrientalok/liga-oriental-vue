@@ -290,5 +290,19 @@ export const db = {
   async deleteSancion(id) {
     const { error } = await supabase.from('sanciones').delete().eq('id', id)
     if (error) handleError('Error deleting sancion:', error)
+  },
+
+  async getConfig() {
+    const { data, error } = await supabase.from('configuracion').select('*').limit(1).maybeSingle()
+    const result = await handleError('Error fetching config:', error)
+    if (result?.error) return null
+    return data
+  },
+
+  async updateConfig(id, updates) {
+    const { data, error } = await supabase.from('configuracion').update(updates).eq('id', id).select()
+    const result = await handleError('Error updating config:', error)
+    if (result?.error) return null
+    return data?.[0]
   }
 }

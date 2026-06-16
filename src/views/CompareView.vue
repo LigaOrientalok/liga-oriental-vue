@@ -279,7 +279,8 @@ onMounted(async () => { await loadData() })
                   { key: 'vallas_invictas', label: '🧤 Vallas Inv.', maxKey: 'vallas_invictas' },
                   { key: 'rating', label: '📈 Rating', maxKey: null },
                   { key: 'gpp', label: '🎯 G/P', maxKey: null }
-                ]" :key="stat.key">
+                ]" :key="stat.key"
+>
                   <td style="padding:10px 8px; border-bottom:1px solid var(--border); color:var(--text);">{{ stat.label }}</td>
                   <td style="padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; font-weight:bold; color:#eab308;">
                     {{ jugadorAStats ? jugadorAStats[stat.key] : '-' }}
@@ -403,7 +404,8 @@ onMounted(async () => { await loadData() })
                   { key: 'gf', label: '⚽ GF', maxKey: 'gf' },
                   { key: 'gc', label: '🥅 GC', maxKey: null },
                   { key: 'vallas_invictas', label: '🧤 Vallas Inv.', maxKey: 'vallas_invictas' }
-                ]" :key="stat.key">
+                ]" :key="stat.key"
+>
                   <td style="padding:10px 8px; border-bottom:1px solid var(--border); color:var(--text);">{{ stat.label }}</td>
                   <td style="padding:10px 8px; border-bottom:1px solid var(--border); text-align:center; font-weight:bold; color:#eab308;">
                     {{ equipoAStats ? equipoAStats[stat.key] ?? '-' : '-' }}
