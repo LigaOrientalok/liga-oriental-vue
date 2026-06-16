@@ -41,7 +41,7 @@ serve(async (req) => {
         items: [{
           title: concepto,
           quantity: 1,
-          currency_id: 'ARS',
+          currency_id: 'UYU',
           unit_price: Number(monto)
         }],
         back_urls: {
