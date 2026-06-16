@@ -19,10 +19,10 @@ CREATE POLICY "Media visible para usuarios autenticados"
   TO authenticated
   USING (true);
 
-CREATE POLICY "Admins pueden gestionar media"
+CREATE POLICY "Usuarios aprobados pueden subir media"
   ON liga_media FOR INSERT
   TO authenticated
-  WITH CHECK (public.get_user_role() IN ('admin', 'delegado'));
+  WITH CHECK (public.get_user_role() IN ('admin', 'delegado', 'usuario'));
 
 CREATE POLICY "Admins pueden modificar cualquier media"
   ON liga_media FOR UPDATE
@@ -30,7 +30,7 @@ CREATE POLICY "Admins pueden modificar cualquier media"
   USING (public.get_user_role() = 'admin')
   WITH CHECK (public.get_user_role() = 'admin');
 
-CREATE POLICY "Admins o creador pueden eliminar media"
+CREATE POLICY "Solo admins pueden eliminar media"
   ON liga_media FOR DELETE
   TO authenticated
-  USING (public.get_user_role() = 'admin' OR auth.uid() = uploaded_by);
+  USING (public.get_user_role() = 'admin');
