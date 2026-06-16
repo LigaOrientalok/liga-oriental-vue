@@ -5,22 +5,30 @@ const MP_ACCESS_TOKEN = Deno.env.get('MP_ACCESS_TOKEN') || ''
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, content-type, apikey, x-client-info',
+}
+
 serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   try {
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) return new Response(JSON.stringify({ error: 'No token' }), { status: 401 })
+    if (!authHeader) return new Response(JSON.stringify({ error: 'No token' }), { status: 401, headers: corsHeaders })
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      global: { headers: { Authorization: authHeader } }
-    })
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 
     const { data: { user }, error: userError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
-    if (userError || !user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
+    if (userError || !user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
 
     const { torneo_id, concepto, monto, equipo_id } = await req.json()
 
     if (!concepto || !monto || monto <= 0) {
-      return new Response(JSON.stringify({ error: 'Faltan datos: concepto y monto requeridos' }), { status: 400 })
+      return new Response(JSON.stringify({ error: 'Faltan datos: concepto y monto requeridos' }), { status: 400, headers: corsHeaders })
     }
 
     const { data: pago, error: insertError } = await supabase
@@ -61,10 +69,10 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ preference_id: pref.id, init_point: pref.init_point }), {
-      headers: { 'Content-Type': 'application/json' }
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 })
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders })
   }
 })

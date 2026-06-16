@@ -5,6 +5,10 @@
 -- Agregar columna equipo_id a usuarios para vincular delegados
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS equipo_id bigint REFERENCES equipos(id) ON DELETE SET NULL;
 
+-- Actualizar constraint de rol para incluir 'delegado'
+ALTER TABLE usuarios DROP CONSTRAINT IF EXISTS usuarios_rol_check;
+ALTER TABLE usuarios ADD CONSTRAINT usuarios_rol_check CHECK (rol IN ('usuario', 'admin', 'delegado'));
+
 -- 11. Pagos
 CREATE TABLE IF NOT EXISTS pagos (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
