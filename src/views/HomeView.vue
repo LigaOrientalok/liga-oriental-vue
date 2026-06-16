@@ -3,13 +3,11 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTorneoStore } from '../stores/torneoStore'
 import { useAuthStore } from '../stores/authStore'
-import { useToastStore } from '../stores/toastStore'
 import { db } from '../lib/db'
 
 const router = useRouter()
 const torneo = useTorneoStore()
 const auth = useAuthStore()
-const toast = useToastStore()
 
 const equipos = ref([])
 const jugadores = ref([])
@@ -88,60 +86,11 @@ watch(() => torneo.torneoActual, async () => { try { await loadData() } catch (e
 onMounted(async () => { try { await loadData() } catch (e) { console.error(e) } })
 
 const mediaItems = ref([])
-const showUploadForm = ref(false)
-const subirMediaTitulo = ref('')
-const subirMediaDesc = ref('')
-const subirMediaTipo = ref('imagen')
-const subirMediaArchivo = ref(null)
-const subirMediaPreview = ref(null)
-const subiendoMedia = ref(false)
 
 async function cargarMedia() {
   try {
     mediaItems.value = await db.getMedia()
   } catch (e) { console.error(e) }
-}
-
-function onMediaFile(e) {
-  const file = e.target.files[0]
-  if (!file) return
-  subirMediaArchivo.value = file
-  const reader = new FileReader()
-  reader.onload = ev => { subirMediaPreview.value = ev.target.result }
-  reader.readAsDataURL(file)
-}
-
-async function subirMedia() {
-  if (!subirMediaTitulo.value.trim()) { toast.warning('Ingresá un título'); return }
-  if (subirMediaTipo.value === 'imagen' && !subirMediaArchivo.value) { toast.warning('Seleccioná una imagen'); return }
-  if (subirMediaTipo.value === 'video' && !subirMediaPreview.value?.trim()) { toast.warning('Ingresá la URL del video'); return }
-  subiendoMedia.value = true
-  try {
-    const contenido = subirMediaTipo.value === 'imagen' ? subirMediaPreview.value : subirMediaPreview.value.trim()
-    await db.createMedia(subirMediaTitulo.value.trim(), subirMediaDesc.value.trim() || null, subirMediaTipo.value, contenido)
-    toast.success('✅ Media subida')
-    subirMediaTitulo.value = ''
-    subirMediaDesc.value = ''
-    subirMediaTipo.value = 'imagen'
-    subirMediaArchivo.value = null
-    subirMediaPreview.value = null
-    showUploadForm.value = false
-    await cargarMedia()
-  } catch (e) {
-    toast.error('Error al subir media')
-  } finally {
-    subiendoMedia.value = false
-  }
-}
-
-async function eliminarMedia(id) {
-  try {
-    await db.deleteMedia(id)
-    toast.success('🗑️ Eliminado')
-    await cargarMedia()
-  } catch (e) {
-    toast.error('Error al eliminar')
-  }
 }
 
 onMounted(() => { cargarMedia() })
@@ -239,57 +188,21 @@ onMounted(() => { cargarMedia() })
 
     <!-- Galería de la Liga -->
     <div class="box" style="margin-top:15px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
-        <h4 style="color:#eab308; margin:0;">📸 Galería de la Liga</h4>
-        <button v-if="auth.isApproved" class="btn-mini" style="background:#eab308; color:black;" @click="showUploadForm = !showUploadForm">
-          {{ showUploadForm ? '✕ Cerrar' : '📤 Subir' }}
-        </button>
-      </div>
-
-      <!-- Formulario de subida -->
-      <div v-if="showUploadForm && auth.isApproved" style="background:var(--bg-input); border-radius:8px; padding:15px; margin-bottom:15px; border-left:4px solid #eab308;">
-        <label class="label-accent">Título:</label>
-        <input type="text" v-model="subirMediaTitulo" placeholder="Título" />
-        <label class="label-accent">Descripción (opcional):</label>
-        <input type="text" v-model="subirMediaDesc" placeholder="Descripción" />
-        <label class="label-accent">Tipo:</label>
-        <select v-model="subirMediaTipo" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
-          <option value="imagen">Imagen</option>
-          <option value="video">Video (URL)</option>
-        </select>
-        <div v-if="subirMediaTipo === 'imagen'">
-          <label class="label-accent">Archivo:</label>
-          <input type="file" accept="image/*" @change="onMediaFile" />
-          <div v-if="subirMediaPreview" style="margin-top:8px;">
-            <img :src="subirMediaPreview" style="max-width:200px; max-height:120px; border-radius:6px; border:2px solid var(--border); object-fit:cover;" />
-          </div>
-        </div>
-        <div v-else>
-          <label class="label-accent">URL del video (YouTube embed):</label>
-          <input type="url" v-model="subirMediaPreview" placeholder="https://www.youtube.com/embed/..." />
-        </div>
-        <div style="display:flex; gap:10px; margin-top:10px;">
-          <button class="btn-main" @click="subirMedia" :disabled="subiendoMedia" style="padding:8px 20px; font-size:0.85rem;">
-            {{ subiendoMedia ? '⏳' : '✅ Subir' }}
-          </button>
-          <button class="btn-mini" style="background:#6b7280; color:white;" @click="showUploadForm = false">Cancelar</button>
-        </div>
-      </div>
+      <h4 style="color:#eab308; margin-bottom:15px;">📸 Galería de la Liga</h4>
 
       <div v-if="mediaItems.length === 0" style="color:var(--text-muted); text-align:center; padding:20px;">
         No hay contenido multimedia todavía
       </div>
       <div v-else style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:12px;">
-        <div v-for="m in mediaItems" :key="m.id" style="background:var(--bg-input); border-radius:8px; overflow:hidden; border:1px solid var(--border); position:relative;">
+        <div v-for="m in mediaItems" :key="m.id" style="background:var(--bg-input); border-radius:8px; overflow:hidden; border:1px solid var(--border);">
           <template v-if="m.tipo === 'video'">
             <iframe :src="m.contenido" frameborder="0" allowfullscreen style="width:100%; aspect-ratio:16/9;"></iframe>
           </template>
-          <img v-else :src="m.contenido" :alt="m.titulo" style="width:100%; aspect-ratio:16/9; object-fit:cover; cursor:pointer;" @click="window.open(m.contenido, '_blank')" />
+          <img v-else :src="m.contenido" :alt="m.titulo" style="width:100%; aspect-ratio:16/9; object-fit:cover;" />
           <div style="padding:8px;">
             <strong style="color:white; font-size:0.85rem; display:block;">{{ m.titulo }}</strong>
             <span v-if="m.descripcion" style="color:var(--text-muted); font-size:0.75rem;">{{ m.descripcion }}</span>
           </div>
-          <button v-if="auth.isAdmin || auth.user?.id === m.uploaded_by" @click="eliminarMedia(m.id)" class="btn-mini" style="position:absolute; top:6px; right:6px; background:rgba(239,68,68,0.8); color:white; padding:2px 8px; font-size:0.7rem;">🗑️</button>
         </div>
       </div>
     </div>
