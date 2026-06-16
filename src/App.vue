@@ -7,6 +7,7 @@ import { useThemeStore } from './stores/themeStore'
 import { useConfigStore } from './stores/configStore'
 import LoginForm from './components/LoginForm.vue'
 import IntroOverlay from './components/IntroOverlay.vue'
+import SponsorBanner from './components/SponsorBanner.vue'
 import { exportarJSON, exportarCSV, exportarPDF, respaldarDatos, recomputarEstadisticas, restaurarRespaldo } from './lib/export'
 import { db } from './lib/db'
 import { pedirPermisoNotificaciones } from './lib/notifications'
@@ -193,6 +194,7 @@ onUnmounted(() => {
     </header>
 
     <main>
+      <SponsorBanner v-if="auth.isApproved" />
       <router-view />
     </main>
   </template>

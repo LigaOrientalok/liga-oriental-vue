@@ -341,5 +341,31 @@ export const db = {
   async deletePago(id) {
     const { error } = await supabase.from('pagos').delete().eq('id', id)
     if (error) handleError('Error deleting pago:', error)
+  },
+
+  // Sponsors
+  async getSponsors() {
+    const { data, error } = await supabase.from('sponsors').select('*').order('orden', { ascending: true })
+    if (error) handleError('Error fetching sponsors:', error)
+    return data || []
+  },
+
+  async createSponsor(nombre, tipo, contenido, link, orden) {
+    const { data, error } = await supabase.from('sponsors').insert({
+      nombre, tipo, contenido, link, orden
+    }).select().single()
+    if (error) handleError('Error creating sponsor:', error)
+    return data
+  },
+
+  async updateSponsor(id, updates) {
+    const { data, error } = await supabase.from('sponsors').update(updates).eq('id', id).select().single()
+    if (error) handleError('Error updating sponsor:', error)
+    return data
+  },
+
+  async deleteSponsor(id) {
+    const { error } = await supabase.from('sponsors').delete().eq('id', id)
+    if (error) handleError('Error deleting sponsor:', error)
   }
 }

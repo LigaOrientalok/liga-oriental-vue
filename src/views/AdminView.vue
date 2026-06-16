@@ -73,6 +73,7 @@ const tabs = [
   { id: 'jugadores', label: 'Jugadores' },
   { id: 'sanciones', label: 'Sanciones' },
   { id: 'pagos', label: 'Pagos' },
+  { id: 'sponsors', label: 'Sponsors' },
   { id: 'torneos', label: 'Torneos' },
   { id: 'config', label: 'Configuración' },
 ]
@@ -510,12 +511,84 @@ async function eliminarTorneo(id) {
   }
 }
 
+const sponsors = ref([])
+const sponsorNombre = ref('')
+const sponsorTipo = ref('imagen')
+const sponsorContenido = ref('')
+const sponsorLink = ref('')
+const sponsorOrden = ref(0)
+const sponsorSaving = ref(false)
+
+async function cargarSponsors() {
+  try {
+    sponsors.value = await db.getSponsors()
+  } catch (e) {
+    toast.error('Error al cargar sponsors')
+  }
+}
+
+async function guardarSponsor() {
+  if (!sponsorNombre.value.trim()) { toast.warning('Ingresá un nombre'); return }
+  if (!sponsorContenido.value) { toast.warning('Seleccioná un archivo o ingresá una URL'); return }
+  sponsorSaving.value = true
+  try {
+    await db.createSponsor(sponsorNombre.value.trim(), sponsorTipo.value, sponsorContenido.value, sponsorLink.value || null, sponsorOrden.value)
+    toast.success('✅ Sponsor creado')
+    sponsorNombre.value = ''
+    sponsorTipo.value = 'imagen'
+    sponsorContenido.value = ''
+    sponsorLink.value = ''
+    sponsorOrden.value = 0
+    sponsorPreview.value = null
+    await cargarSponsors()
+  } catch (e) {
+    toast.error('Error al crear sponsor')
+  } finally {
+    sponsorSaving.value = false
+  }
+}
+
+const sponsorPreview = ref(null)
+
+function onSponsorFile(e) {
+  const file = e.target.files[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = (ev) => {
+    const base64 = ev.target.result
+    sponsorContenido.value = base64
+    sponsorPreview.value = base64
+  }
+  reader.readAsDataURL(file)
+}
+
+async function eliminarSponsor(id) {
+  if (!await waitConfirm('¿Eliminar este sponsor?')) return
+  try {
+    await db.deleteSponsor(id)
+    toast.success('🗑️ Sponsor eliminado')
+    await cargarSponsors()
+  } catch (e) {
+    toast.error('Error al eliminar sponsor')
+  }
+}
+
+async function toggleSponsor(sp) {
+  try {
+    await db.updateSponsor(sp.id, { activo: !sp.activo })
+    await cargarSponsors()
+  } catch (e) {
+    toast.error('Error al actualizar sponsor')
+  }
+}
+
 onMounted(async () => {
   await cargarUsuarios()
   if (torneo.torneoActual) {
     await cargarEquipos()
     await cargarSanciones()
     await cargarPagos()
+    await cargarSponsors()
   }
 })
 
@@ -540,7 +613,7 @@ watch(() => torneo.torneoActual, async () => {
           :key="tab.id"
           class="btn-mini"
           :style="{ background: activeTab === tab.id ? '#eab308' : 'var(--border)', color: activeTab === tab.id ? 'black' : 'white' }"
-          @click="activeTab = tab.id; if(tab.id === 'usuarios') cargarUsuarios(); if((tab.id === 'equipos' || tab.id === 'jugadores') && torneo.torneoActual) cargarEquipos(); if(tab.id === 'sanciones' && torneo.torneoActual) cargarSanciones(); if(tab.id === 'config') cargarConfig()"
+          @click="activeTab = tab.id; if(tab.id === 'usuarios') cargarUsuarios(); if((tab.id === 'equipos' || tab.id === 'jugadores') && torneo.torneoActual) cargarEquipos(); if(tab.id === 'sanciones' && torneo.torneoActual) cargarSanciones(); if(tab.id === 'sponsors') cargarSponsors(); if(tab.id === 'config') cargarConfig()"
         >
           {{ tab.label }}
         </button>
@@ -870,6 +943,76 @@ watch(() => torneo.torneoActual, async () => {
                     :style="{ color: p.estado === 'pagado' ? '#22c55e' : '#f97316' }"
                   >{{ p.estado }}</span>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPONSORS TAB -->
+      <div v-if="activeTab === 'sponsors'" style="margin-top:15px;">
+        <div style="display:grid; grid-template-columns: 1fr 2fr; gap:20px;">
+          <div class="box" style="border-left:4px solid #f97316;">
+            <h3 style="color:#f97316; margin-bottom:15px;">➕ Nuevo Sponsor</h3>
+            <label class="label-accent">Nombre:</label>
+            <input type="text" v-model="sponsorNombre" placeholder="Ej: Coca-Cola" />
+
+            <label class="label-accent">Tipo:</label>
+            <select v-model="sponsorTipo" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
+              <option value="imagen">Imagen</option>
+              <option value="video">Video (URL)</option>
+            </select>
+
+            <div v-if="sponsorTipo === 'imagen'">
+              <label class="label-accent">Imagen:</label>
+              <input type="file" accept="image/*" @change="onSponsorFile" />
+              <div v-if="sponsorPreview" style="margin-top:8px;">
+                <img :src="sponsorPreview" style="max-width:150px; max-height:100px; border-radius:6px; border:2px solid var(--border); object-fit:cover;" />
+              </div>
+            </div>
+            <div v-else>
+              <label class="label-accent">URL del video (YouTube/Vimeo):</label>
+              <input type="url" v-model="sponsorContenido" placeholder="https://..." />
+              <div v-if="sponsorContenido" style="margin-top:8px;">
+                <code style="color:var(--text-muted); font-size:0.8rem; word-break:break-all;">{{ sponsorContenido }}</code>
+              </div>
+            </div>
+
+            <label class="label-accent">Link externo (opcional):</label>
+            <input type="url" v-model="sponsorLink" placeholder="https://..." />
+
+            <label class="label-accent">Orden:</label>
+            <input type="number" v-model.number="sponsorOrden" min="0" style="width:80px;" />
+
+            <button class="btn-main" @click="guardarSponsor" :disabled="sponsorSaving" style="margin-top:15px; width:100%;">
+              {{ sponsorSaving ? '⏳ Guardando...' : '💾 Guardar Sponsor' }}
+            </button>
+          </div>
+
+          <div class="box">
+            <h3 style="color:#f97316; margin-bottom:15px;">📋 Sponsors</h3>
+            <div v-if="sponsors.length === 0" style="color:var(--text-muted); text-align:center; padding:30px;">
+              No hay sponsors todavía
+            </div>
+            <div v-for="sp in sponsors" :key="sp.id" style="background:var(--bg-input); border-radius:8px; padding:12px; margin-bottom:10px; display:flex; align-items:center; gap:12px; border-left:4px solid #f97316;">
+              <div v-if="sp.tipo === 'imagen'" style="width:60px; height:60px; border-radius:6px; overflow:hidden; flex-shrink:0; background:#222;">
+                <img :src="sp.contenido" :alt="sp.nombre" style="width:100%; height:100%; object-fit:cover;" />
+              </div>
+              <div v-else style="width:60px; height:60px; border-radius:6px; flex-shrink:0; background:#222; display:flex; align-items:center; justify-content:center; font-size:1.5rem;">
+                🎬
+              </div>
+              <div style="flex:1; min-width:0;">
+                <strong style="color:white; display:block;">{{ sp.nombre }}</strong>
+                <span style="color:var(--text-muted); font-size:0.75rem;">
+                  {{ sp.tipo }} · Orden {{ sp.orden }}
+                  <span v-if="sp.link" style="display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">🔗 {{ sp.link }}</span>
+                </span>
+              </div>
+              <div style="display:flex; gap:6px; align-items:center;">
+                <button @click="toggleSponsor(sp)" class="btn-mini" :style="{ background: sp.activo ? '#22c55e' : '#6b7280', color: 'white', fontSize: '0.7rem' }">
+                  {{ sp.activo ? 'ON' : 'OFF' }}
+                </button>
+                <button @click="eliminarSponsor(sp.id)" class="btn-mini" style="background:#ef4444; color:white;">🗑️</button>
               </div>
             </div>
           </div>
