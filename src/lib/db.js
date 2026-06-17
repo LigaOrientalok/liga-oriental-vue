@@ -394,5 +394,66 @@ export const db = {
   async deleteMedia(id) {
     const { error } = await supabase.from('liga_media').delete().eq('id', id)
     if (error) handleError('Error deleting media:', error)
+  },
+
+  // ---- Likes ----
+  async getMediaLikes(mediaId) {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    const { count } = await supabase.from('liga_media_likes').select('*', { count: 'exact', head: true }).eq('media_id', mediaId)
+    let userLiked = false
+    if (userId) {
+      const { data: myLike } = await supabase.from('liga_media_likes').select('id').eq('media_id', mediaId).eq('user_id', userId).maybeSingle()
+      userLiked = !!myLike
+    }
+    return { count: count || 0, userLiked }
+  },
+
+  async toggleLike(mediaId) {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) return
+    const { data: existing } = await supabase.from('liga_media_likes').select('id').eq('media_id', mediaId).eq('user_id', userId).maybeSingle()
+    if (existing) {
+      await supabase.from('liga_media_likes').delete().eq('id', existing.id)
+    } else {
+      await supabase.from('liga_media_likes').insert({ media_id: mediaId, user_id: userId })
+    }
+    const userId2 = (await supabase.auth.getUser()).data.user?.id
+    const { count } = await supabase.from('liga_media_likes').select('*', { count: 'exact', head: true }).eq('media_id', mediaId)
+    let userLiked = false
+    if (userId2) {
+      const { data: myLike } = await supabase.from('liga_media_likes').select('id').eq('media_id', mediaId).eq('user_id', userId2).maybeSingle()
+      userLiked = !!myLike
+    }
+    return { count: count || 0, userLiked }
+  },
+
+  // ---- Comments ----
+  async getMediaComments(mediaId) {
+    const { data, error } = await supabase
+      .from('liga_media_comments')
+      .select('id, media_id, user_id, contenido, created_at')
+      .eq('media_id', mediaId)
+      .order('created_at', { ascending: true })
+    if (error) handleError('Error fetching comments:', error)
+    const userIds = [...new Set((data || []).map(c => c.user_id))]
+    const userMap = {}
+    if (userIds.length) {
+      const { data: users } = await supabase.from('usuarios').select('id, email').in('id', userIds)
+      if (users) users.forEach(u => { userMap[u.id] = u.email?.split('@')[0] || 'Usuario' })
+    }
+    return (data || []).map(c => ({ ...c, username: userMap[c.user_id] || 'Usuario' }))
+  },
+
+  async addComment(mediaId, contenido) {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) return
+    const { data, error } = await supabase.from('liga_media_comments').insert({ media_id: mediaId, user_id: userId, contenido }).select().single()
+    if (error) handleError('Error adding comment:', error)
+    return data
+  },
+
+  async deleteComment(id) {
+    const { error } = await supabase.from('liga_media_comments').delete().eq('id', id)
+    if (error) handleError('Error deleting comment:', error)
   }
 }

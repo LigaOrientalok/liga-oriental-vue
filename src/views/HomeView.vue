@@ -10,19 +10,20 @@ const toast = useToastStore()
 const mediaItems = ref([])
 const showUpload = ref(false)
 const selectedMedia = ref(null)
-
-function abrirMedia(m) { selectedMedia.value = m }
-function cerrarMedia() { selectedMedia.value = null }
-function onKeydown(e) { if (e.key === 'Escape') cerrarMedia() }
-
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 const uploadTitulo = ref('')
 const uploadDesc = ref('')
 const uploadTipo = ref('imagen')
 const uploadArchivo = ref(null)
 const uploadPreview = ref(null)
 const uploadSaving = ref(false)
+
+// like / comment state
+const likeCount = ref(0)
+const userLiked = ref(false)
+const likeLoading = ref(false)
+const comments = ref([])
+const newComment = ref('')
+const commentSaving = ref(false)
 
 async function cargarMedia() {
   try {
@@ -72,7 +73,81 @@ async function eliminarMedia(id) {
   }
 }
 
-onMounted(() => { cargarMedia() })
+// --- Lightbox ---
+async function abrirMedia(m) {
+  selectedMedia.value = m
+  likeLoading.value = true
+  try {
+    const [likesResult, commentsResult] = await Promise.all([
+      db.getMediaLikes(m.id),
+      db.getMediaComments(m.id)
+    ])
+    likeCount.value = likesResult.count
+    userLiked.value = likesResult.userLiked
+    comments.value = commentsResult
+  } catch (e) {
+    console.error(e)
+  } finally {
+    likeLoading.value = false
+  }
+}
+
+function cerrarMedia() {
+  selectedMedia.value = null
+  comments.value = []
+  newComment.value = ''
+}
+
+function onKeydown(e) {
+  if (e.key === 'Escape') cerrarMedia()
+}
+
+async function toggleLike() {
+  if (likeLoading.value) return
+  likeLoading.value = true
+  try {
+    const result = await db.toggleLike(selectedMedia.value.id)
+    if (result) {
+      likeCount.value = result.count
+      userLiked.value = result.userLiked
+    }
+  } catch (e) {
+    console.error(e)
+  } finally {
+    likeLoading.value = false
+  }
+}
+
+async function enviarComentario() {
+  if (!newComment.value.trim()) return
+  commentSaving.value = true
+  try {
+    await db.addComment(selectedMedia.value.id, newComment.value.trim())
+    newComment.value = ''
+    comments.value = await db.getMediaComments(selectedMedia.value.id)
+    toast.success('💬 Comentario enviado')
+  } catch (e) {
+    toast.error('Error al comentar')
+  } finally {
+    commentSaving.value = false
+  }
+}
+
+async function borrarComentario(id) {
+  try {
+    await db.deleteComment(id)
+    comments.value = await db.getMediaComments(selectedMedia.value.id)
+    toast.success('🗑️ Comentario eliminado')
+  } catch (e) {
+    toast.error('Error al eliminar comentario')
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown)
+  cargarMedia()
+})
+onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
@@ -130,15 +205,46 @@ onMounted(() => { cargarMedia() })
       </div>
     </div>
 
-    <div v-if="selectedMedia" @click.self="cerrarMedia" style="position:fixed; inset:0; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; z-index:9999; padding:20px;">
-      <div style="position:relative; max-width:90vw; max-height:90vh;">
-        <button @click="cerrarMedia" style="position:absolute; top:-36px; right:0; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">✕</button>
-        <div style="background:var(--bg-card); border-radius:8px; padding:12px; max-width:90vw; max-height:90vh; overflow:auto;">
-          <template v-if="selectedMedia.tipo === 'video'">
-            <iframe :src="selectedMedia.contenido" frameborder="0" allowfullscreen style="width:80vw; max-width:900px; aspect-ratio:16/9; border-radius:6px;"></iframe>
-          </template>
-          <img v-else :src="selectedMedia.contenido" :alt="selectedMedia.titulo" style="max-width:80vw; max-height:75vh; border-radius:6px; object-fit:contain;" />
-          <p style="color:white; margin-top:8px; text-align:center;">{{ selectedMedia.titulo }}</p>
+    <!-- Lightbox con likes y comentarios -->
+    <div v-if="selectedMedia" @click.self="cerrarMedia" style="position:fixed; inset:0; background:rgba(0,0,0,0.88); display:flex; align-items:center; justify-content:center; z-index:9999; padding:20px;">
+      <div style="position:relative; max-width:95vw; max-height:95vh; width:100%;">
+        <button @click="cerrarMedia" style="position:absolute; top:-36px; right:0; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; z-index:1;">✕</button>
+        <div style="background:var(--bg-card); border-radius:10px; max-width:95vw; max-height:95vh; overflow:hidden; display:flex; flex-direction:column;">
+          <!-- media -->
+          <div style="flex:1; min-height:0; display:flex; align-items:center; justify-content:center; background:#000; padding:8px;">
+            <template v-if="selectedMedia.tipo === 'video'">
+              <iframe :src="selectedMedia.contenido" frameborder="0" allowfullscreen style="width:100%; max-width:900px; aspect-ratio:16/9; border-radius:6px;"></iframe>
+            </template>
+            <img v-else :src="selectedMedia.contenido" :alt="selectedMedia.titulo" style="max-width:100%; max-height:60vh; border-radius:6px; object-fit:contain;" />
+          </div>
+          <!-- info + likes + comments -->
+          <div style="padding:12px 16px; border-top:1px solid var(--border);">
+            <strong style="color:white; font-size:0.95rem;">{{ selectedMedia.titulo }}</strong>
+            <span v-if="selectedMedia.descripcion" style="display:block; color:var(--text-muted); font-size:0.8rem; margin-top:2px;">{{ selectedMedia.descripcion }}</span>
+            <!-- like button -->
+            <div style="display:flex; align-items:center; gap:12px; margin-top:8px;">
+              <button @click="toggleLike" :disabled="likeLoading" style="background:none; border:none; cursor:pointer; font-size:1.3rem; display:flex; align-items:center; gap:4px; padding:0; color:inherit;">
+                <span :style="{ color: userLiked ? '#ef4444' : '#9ca3af' }">{{ userLiked ? '❤️' : '🤍' }}</span>
+                <span style="color:var(--text-muted); font-size:0.85rem;">{{ likeCount }}</span>
+              </button>
+            </div>
+            <!-- comments -->
+            <div style="margin-top:8px; border-top:1px solid var(--border); padding-top:8px; max-height:200px; overflow-y:auto;">
+              <div v-for="c in comments" :key="c.id" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+                <div>
+                  <strong style="color:#eab308; font-size:0.75rem;">{{ c.username }}</strong>
+                  <p style="color:white; font-size:0.8rem; margin:0;">{{ c.contenido }}</p>
+                </div>
+                <button v-if="auth.user?.id === c.user_id || auth.isAdmin" @click="borrarComentario(c.id)" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:0.7rem; padding:2px;">🗑️</button>
+              </div>
+              <div v-if="comments.length === 0" style="color:var(--text-muted); font-size:0.8rem; text-align:center; padding:6px;">Sin comentarios</div>
+            </div>
+            <!-- add comment -->
+            <div v-if="auth.isApproved" style="display:flex; gap:6px; margin-top:8px;">
+              <input type="text" v-model="newComment" placeholder="Escribí un comentario..." @keyup.enter="enviarComentario" style="flex:1; font-size:0.8rem;" />
+              <button @click="enviarComentario" :disabled="commentSaving || !newComment.trim()" class="btn-mini" style="background:#eab308; color:black; font-size:0.75rem; padding:4px 10px;">{{ commentSaving ? '⏳' : 'Enviar' }}</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
