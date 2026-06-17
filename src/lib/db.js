@@ -455,5 +455,19 @@ export const db = {
   async deleteComment(id) {
     const { error } = await supabase.from('liga_media_comments').delete().eq('id', id)
     if (error) handleError('Error deleting comment:', error)
+  },
+
+  // ---- @mentions search ----
+  async searchMentionables(query) {
+    if (!query || query.length < 1) return { jugadores: [], equipos: [] }
+    const q = `%${query}%`
+    const [jugRes, eqRes] = await Promise.all([
+      supabase.from('jugadores').select('id, nombre').ilike('nombre', q).limit(5),
+      supabase.from('equipos').select('id, nombre').ilike('nombre', q).limit(5)
+    ])
+    return {
+      jugadores: jugRes.data || [],
+      equipos: eqRes.data || []
+    }
   }
 }

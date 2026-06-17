@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { db } from '../lib/db'
 import { useAuthStore } from '../stores/authStore'
 import { useToastStore } from '../stores/toastStore'
@@ -24,11 +24,35 @@ const likeLoading = ref(false)
 const comments = ref([])
 const newComment = ref('')
 const commentSaving = ref(false)
+const commentInputRef = ref(null)
+
+// @mention
+const mentionResults = ref({ jugadores: [], equipos: [] })
+const showMentions = ref(false)
+const mentionIndex = ref(0)
+let mentionTimer = null
+
+const mentionList = computed(() => [
+  ...mentionResults.value.jugadores.map(j => ({ ...j, _type: 'jugador' })),
+  ...mentionResults.value.equipos.map(e => ({ ...e, _type: 'equipo' }))
+])
+
+function parseMentions(text) {
+  const parts = []
+  const regex = /(@\S+)/g
+  let lastIndex = 0, match
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) parts.push({ type: 'text', value: text.slice(lastIndex, match.index) })
+    parts.push({ type: 'mention', value: match[1] })
+    lastIndex = match.index + match[1].length
+  }
+  if (lastIndex < text.length) parts.push({ type: 'text', value: text.slice(lastIndex) })
+  return parts.length ? parts : [{ type: 'text', value: text }]
+}
 
 async function cargarMedia() {
-  try {
-    mediaItems.value = await db.getMedia()
-  } catch (e) { console.error(e) }
+  try { mediaItems.value = await db.getMedia() }
+  catch (e) { console.error(e) }
 }
 
 function onUploadFile(e) {
@@ -49,73 +73,90 @@ async function subirMedia() {
     const contenido = uploadTipo.value === 'imagen' ? uploadPreview.value : uploadPreview.value.trim()
     await db.createMedia(uploadTitulo.value.trim(), uploadDesc.value.trim() || null, uploadTipo.value, contenido)
     toast.success('✅ Subido')
-    uploadTitulo.value = ''
-    uploadDesc.value = ''
-    uploadTipo.value = 'imagen'
-    uploadArchivo.value = null
-    uploadPreview.value = null
-    showUpload.value = false
+    uploadTitulo.value = ''; uploadDesc.value = ''; uploadTipo.value = 'imagen'
+    uploadArchivo.value = null; uploadPreview.value = null; showUpload.value = false
     await cargarMedia()
-  } catch (e) {
-    toast.error('Error al subir')
-  } finally {
-    uploadSaving.value = false
-  }
+  } catch (e) { toast.error('Error al subir')
+  } finally { uploadSaving.value = false }
 }
 
 async function eliminarMedia(id) {
-  try {
-    await db.deleteMedia(id)
-    toast.success('🗑️ Eliminado')
-    await cargarMedia()
-  } catch (e) {
-    toast.error('Error al eliminar')
-  }
+  try { await db.deleteMedia(id); toast.success('🗑️ Eliminado'); await cargarMedia() }
+  catch (e) { toast.error('Error al eliminar') }
 }
 
 // --- Lightbox ---
 async function abrirMedia(m) {
-  selectedMedia.value = m
-  likeLoading.value = true
+  selectedMedia.value = m; likeLoading.value = true; showMentions.value = false
   try {
     const [likesResult, commentsResult] = await Promise.all([
-      db.getMediaLikes(m.id),
-      db.getMediaComments(m.id)
+      db.getMediaLikes(m.id), db.getMediaComments(m.id)
     ])
-    likeCount.value = likesResult.count
-    userLiked.value = likesResult.userLiked
+    likeCount.value = likesResult.count; userLiked.value = likesResult.userLiked
     comments.value = commentsResult
-  } catch (e) {
-    console.error(e)
-  } finally {
-    likeLoading.value = false
-  }
+  } catch (e) { console.error(e)
+  } finally { likeLoading.value = false }
 }
 
 function cerrarMedia() {
-  selectedMedia.value = null
-  comments.value = []
-  newComment.value = ''
+  selectedMedia.value = null; comments.value = []; newComment.value = ''; showMentions.value = false
 }
 
-function onKeydown(e) {
-  if (e.key === 'Escape') cerrarMedia()
-}
+function onKeydown(e) { if (e.key === 'Escape') cerrarMedia() }
 
 async function toggleLike() {
-  if (likeLoading.value) return
-  likeLoading.value = true
+  if (likeLoading.value) return; likeLoading.value = true
   try {
     const result = await db.toggleLike(selectedMedia.value.id)
-    if (result) {
-      likeCount.value = result.count
-      userLiked.value = result.userLiked
+    if (result) { likeCount.value = result.count; userLiked.value = result.userLiked }
+  } catch (e) { console.error(e)
+  } finally { likeLoading.value = false }
+}
+
+// --- @mention ---
+function onCommentInput(e) {
+  const pos = e.target.selectionStart
+  const text = newComment.value
+  const beforeCursor = text.slice(0, pos)
+  const lastAt = beforeCursor.lastIndexOf('@')
+  if (lastAt !== -1) {
+    const afterAt = beforeCursor.slice(lastAt + 1)
+    if (afterAt.indexOf(' ') === -1 && afterAt.length > 0) {
+      clearTimeout(mentionTimer)
+      mentionTimer = setTimeout(async () => {
+        const res = await db.searchMentionables(afterAt)
+        mentionResults.value = res
+        mentionIndex.value = 0
+        showMentions.value = res.jugadores.length > 0 || res.equipos.length > 0
+      }, 200)
+      return
     }
-  } catch (e) {
-    console.error(e)
-  } finally {
-    likeLoading.value = false
   }
+  showMentions.value = false
+}
+
+function selectMention(item) {
+  const input = commentInputRef.value
+  if (!input) return
+  const pos = input.selectionStart
+  const text = newComment.value
+  const beforeCursor = text.slice(0, pos)
+  const lastAt = beforeCursor.lastIndexOf('@')
+  newComment.value = text.slice(0, lastAt) + '@' + item.nombre + ' ' + text.slice(pos)
+  showMentions.value = false
+  input.focus()
+}
+
+function onCommentKeydown(e) {
+  const list = mentionList.value
+  if (showMentions.value && list.length) {
+    if (e.key === 'ArrowDown') { e.preventDefault(); mentionIndex.value = (mentionIndex.value + 1) % list.length }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); mentionIndex.value = (mentionIndex.value - 1 + list.length) % list.length }
+    else if (e.key === 'Enter' && list[mentionIndex.value]) { e.preventDefault(); selectMention(list[mentionIndex.value]) }
+    else if (e.key === 'Escape') { showMentions.value = false }
+    return
+  }
+  if (e.key === 'Enter') { e.preventDefault(); enviarComentario() }
 }
 
 async function enviarComentario() {
@@ -126,27 +167,16 @@ async function enviarComentario() {
     newComment.value = ''
     comments.value = await db.getMediaComments(selectedMedia.value.id)
     toast.success('💬 Comentario enviado')
-  } catch (e) {
-    toast.error('Error al comentar')
-  } finally {
-    commentSaving.value = false
-  }
+  } catch (e) { toast.error('Error al comentar')
+  } finally { commentSaving.value = false }
 }
 
 async function borrarComentario(id) {
-  try {
-    await db.deleteComment(id)
-    comments.value = await db.getMediaComments(selectedMedia.value.id)
-    toast.success('🗑️ Comentario eliminado')
-  } catch (e) {
-    toast.error('Error al eliminar comentario')
-  }
+  try { await db.deleteComment(id); comments.value = await db.getMediaComments(selectedMedia.value.id); toast.success('🗑️ Eliminado') }
+  catch (e) { toast.error('Error al eliminar comentario') }
 }
 
-onMounted(() => {
-  window.addEventListener('keydown', onKeydown)
-  cargarMedia()
-})
+onMounted(() => { window.addEventListener('keydown', onKeydown); cargarMedia() })
 onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
@@ -205,7 +235,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
       </div>
     </div>
 
-    <!-- Lightbox con likes y comentarios -->
+    <!-- Lightbox -->
     <div v-if="selectedMedia" @click.self="cerrarMedia" style="position:fixed; inset:0; background:rgba(0,0,0,0.88); display:flex; align-items:center; justify-content:center; z-index:9999; padding:20px;">
       <div style="position:relative; max-width:95vw; max-height:95vh; width:100%;">
         <button @click="cerrarMedia" style="position:absolute; top:-36px; right:0; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; z-index:1;">✕</button>
@@ -221,7 +251,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
           <div style="padding:12px 16px; border-top:1px solid var(--border);">
             <strong style="color:white; font-size:0.95rem;">{{ selectedMedia.titulo }}</strong>
             <span v-if="selectedMedia.descripcion" style="display:block; color:var(--text-muted); font-size:0.8rem; margin-top:2px;">{{ selectedMedia.descripcion }}</span>
-            <!-- like button -->
+            <!-- like -->
             <div style="display:flex; align-items:center; gap:12px; margin-top:8px;">
               <button @click="toggleLike" :disabled="likeLoading" style="background:none; border:none; cursor:pointer; font-size:1.3rem; display:flex; align-items:center; gap:4px; padding:0; color:inherit;">
                 <span :style="{ color: userLiked ? '#ef4444' : '#9ca3af' }">{{ userLiked ? '❤️' : '🤍' }}</span>
@@ -233,16 +263,37 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
               <div v-for="c in comments" :key="c.id" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
                 <div>
                   <strong style="color:#eab308; font-size:0.75rem;">{{ c.username }}</strong>
-                  <p style="color:white; font-size:0.8rem; margin:0;">{{ c.contenido }}</p>
+                  <p style="color:white; font-size:0.8rem; margin:0;">
+                    <template v-for="(part, pi) in parseMentions(c.contenido)" :key="pi">
+                      <span v-if="part.type === 'mention'" style="color:#eab308; font-weight:600;">{{ part.value }}</span>
+                      <span v-else>{{ part.value }}</span>
+                    </template>
+                  </p>
                 </div>
                 <button v-if="auth.user?.id === c.user_id || auth.isAdmin" @click="borrarComentario(c.id)" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:0.7rem; padding:2px;">🗑️</button>
               </div>
               <div v-if="comments.length === 0" style="color:var(--text-muted); font-size:0.8rem; text-align:center; padding:6px;">Sin comentarios</div>
             </div>
             <!-- add comment -->
-            <div v-if="auth.isApproved" style="display:flex; gap:6px; margin-top:8px;">
-              <input type="text" v-model="newComment" placeholder="Escribí un comentario..." @keyup.enter="enviarComentario" style="flex:1; font-size:0.8rem;" />
-              <button @click="enviarComentario" :disabled="commentSaving || !newComment.trim()" class="btn-mini" style="background:#eab308; color:black; font-size:0.75rem; padding:4px 10px;">{{ commentSaving ? '⏳' : 'Enviar' }}</button>
+            <div v-if="auth.user" style="position:relative; margin-top:8px;">
+              <!-- @mention dropdown -->
+              <div v-if="showMentions && mentionList.length" style="position:absolute; bottom:100%; left:0; width:100%; background:var(--bg-card); border:1px solid var(--border); border-radius:8px; max-height:160px; overflow-y:auto; z-index:10; box-shadow:0 -4px 12px rgba(0,0,0,0.4); margin-bottom:4px;">
+                <div v-for="(item, mi) in mentionList" :key="item._type + '-' + item.id"
+                  @click="selectMention(item)"
+                  @mouseenter="mentionIndex = mi"
+                  style="padding:6px 10px; cursor:pointer; display:flex; align-items:center; gap:8px; font-size:0.8rem;"
+                  :style="{ background: mi === mentionIndex ? 'var(--bg-input)' : 'transparent' }">
+                  <span style="width:6px; height:6px; border-radius:50%; display:inline-block; flex-shrink:0;"
+                    :style="{ background: item._type === 'jugador' ? '#3b82f6' : '#eab308' }"></span>
+                  <span :style="{ color: item._type === 'jugador' ? '#93c5fd' : '#fde68a' }">{{ item.nombre }}</span>
+                  <span style="color:var(--text-muted); font-size:0.65rem; margin-left:auto;">{{ item._type === 'jugador' ? 'Jugador' : 'Equipo' }}</span>
+                </div>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <input ref="commentInputRef" type="text" v-model="newComment" placeholder="Escribí un comentario... (usá @ para mencionar)"
+                  @input="onCommentInput" @keydown="onCommentKeydown" style="flex:1; font-size:0.8rem;" />
+                <button @click="enviarComentario" :disabled="commentSaving || !newComment.trim()" class="btn-mini" style="background:#eab308; color:black; font-size:0.75rem; padding:4px 10px;">{{ commentSaving ? '⏳' : 'Enviar' }}</button>
+              </div>
             </div>
           </div>
         </div>
