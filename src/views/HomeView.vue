@@ -248,7 +248,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
             <img v-else :src="selectedMedia.contenido" :alt="selectedMedia.titulo" style="max-width:100%; max-height:60vh; border-radius:6px; object-fit:contain;" />
           </div>
           <!-- info + likes + comments -->
-          <div style="padding:12px 16px; border-top:1px solid var(--border);">
+          <div style="flex-shrink:0; padding:12px 16px; border-top:1px solid var(--border);">
             <strong style="color:white; font-size:0.95rem;">{{ selectedMedia.titulo }}</strong>
             <span v-if="selectedMedia.descripcion" style="display:block; color:var(--text-muted); font-size:0.8rem; margin-top:2px;">{{ selectedMedia.descripcion }}</span>
             <!-- like -->
@@ -259,7 +259,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
               </button>
             </div>
             <!-- comments -->
-            <div style="margin-top:8px; border-top:1px solid var(--border); padding-top:8px; max-height:200px; overflow-y:auto;">
+            <div style="margin-top:8px; border-top:1px solid var(--border); padding-top:8px; height:120px; overflow-y:auto;">
               <div v-for="c in comments" :key="c.id" style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
                 <div>
                   <strong style="color:#eab308; font-size:0.75rem;">{{ c.username }}</strong>
