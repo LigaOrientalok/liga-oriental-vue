@@ -10,7 +10,6 @@ import IntroOverlay from './components/IntroOverlay.vue'
 import SponsorBanner from './components/SponsorBanner.vue'
 import { exportarJSON, exportarCSV, exportarPDF, respaldarDatos, recomputarEstadisticas, restaurarRespaldo } from './lib/export'
 import { db } from './lib/db'
-import { pedirPermisoNotificaciones } from './lib/notifications'
 
 const router = useRouter()
 const route = useRoute()
@@ -32,6 +31,7 @@ const navItems = [
   { path: '/equipos', label: 'EQUIPOS', icon: '📋' },
   { path: '/historial', label: 'HISTORIAL', icon: '📜' },
   { path: '/misiones', label: 'MISIONES', icon: '🎯' },
+  { path: '/live', label: 'LIVE', icon: '📺' },
   { path: '/comparar', label: 'VS', icon: '⚔️' },
   { path: '/ranking', label: 'RANKING', icon: '📈' },
   { path: '/delegado', label: 'DELEGADO', icon: '👔' },
@@ -55,7 +55,50 @@ function isActive(path) {
 }
 
 const notifCount = ref(0)
+const notifList = ref([])
+const showNotifDropdown = ref(false)
 let notifInterval = null
+let notifDropdownCleanup = null
+
+async function loadNotifCount() {
+  if (!auth.isLoggedIn) return
+  try { notifCount.value = await db.notifCount() } catch { notifCount.value = 0 }
+}
+
+async function loadNotifList() {
+  if (!auth.isLoggedIn) return
+  try { notifList.value = await db.getNotificaciones() } catch { notifList.value = [] }
+}
+
+async function toggleNotifDropdown() {
+  showNotifDropdown.value = !showNotifDropdown.value
+  if (showNotifDropdown.value) await loadNotifList()
+}
+
+async function marcarLeida(id) {
+  await db.marcarLeida(id)
+  notifList.value = notifList.value.map(n => n.id === id ? { ...n, leida: true } : n)
+  const stillUnread = notifList.value.filter(n => !n.leida).length
+  if (stillUnread === 0) notifCount.value = 0
+}
+
+async function marcarTodasLeidas() {
+  await db.marcarTodasLeidas()
+  notifList.value = notifList.value.map(n => ({ ...n, leida: true }))
+  notifCount.value = 0
+}
+
+function irANotificacion(n) {
+  showNotifDropdown.value = false
+  if (n.media_id) router.push('/')
+  if (!n.leida) marcarLeida(n.id)
+}
+
+function clickFueraNotif(e) {
+  if (!e.target.closest('.notif-wrapper')) {
+    showNotifDropdown.value = false
+  }
+}
 
 async function logout() {
   await auth.logout()
@@ -101,14 +144,15 @@ onMounted(async () => {
   await auth.init()
   if (auth.isLoggedIn) {
     await torneo.init()
-    verificarNotificaciones()
-    notifInterval = setInterval(verificarNotificaciones, 30000)
-    setTimeout(() => pedirPermisoNotificaciones(), 2000)
+    loadNotifCount()
+    notifInterval = setInterval(loadNotifCount, 30000)
+    document.addEventListener('click', clickFueraNotif)
   }
 })
 
 onUnmounted(() => {
   if (notifInterval) clearInterval(notifInterval)
+  document.removeEventListener('click', clickFueraNotif)
 })
 </script>
 
@@ -158,8 +202,28 @@ onUnmounted(() => {
         <div class="header-actions">
           <button class="hamburger" @click="navOpen = !navOpen" aria-label="Abrir menú de navegación">☰</button>
           <button class="btn-icon" @click="themeStore.toggleTheme(); config.applyBackground()" aria-label="Cambiar tema">{{ themeStore.theme === 'dark' ? '☀️' : '🌙' }}</button>
-          <button class="btn-icon" @click="router.push('/admin')" aria-label="Perfil">👤</button>
-          <button class="btn-icon btn-notif" @click="handleNotifications" aria-label="Notificaciones">🔔<span v-if="notifCount > 0" class="notif-badge">{{ notifCount }}</span></button>
+          <button class="btn-icon" @click="router.push('/perfil')" aria-label="Perfil">👤</button>
+          <div class="notif-wrapper" style="position:relative;">
+            <button class="btn-icon btn-notif" @click.stop="toggleNotifDropdown" aria-label="Notificaciones">🔔<span v-if="notifCount > 0" class="notif-badge">{{ notifCount }}</span></button>
+            <div v-if="showNotifDropdown"
+              style="position:absolute; top:100%; right:0; width:320px; max-height:400px; overflow-y:auto; background:var(--bg-card); border:1px solid var(--border); border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,0.5); z-index:100; margin-top:6px;">
+              <div style="padding:10px 12px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                <strong style="color:white; font-size:0.85rem;">Notificaciones</strong>
+                <button v-if="notifCount > 0" @click="marcarTodasLeidas" style="background:none; border:none; color:#eab308; cursor:pointer; font-size:0.75rem;">Marcar todo leído</button>
+              </div>
+              <div v-if="notifList.length === 0" style="color:var(--text-muted); text-align:center; padding:20px; font-size:0.8rem;">Sin notificaciones</div>
+              <div v-for="n in notifList" :key="n.id" @click="irANotificacion(n)"
+                style="padding:10px 12px; cursor:pointer; display:flex; align-items:flex-start; gap:8px; border-bottom:1px solid var(--border);"
+                :style="{ background: n.leida ? 'transparent' : 'rgba(234,179,8,0.08)' }">
+                <span style="font-size:1.1rem; flex-shrink:0; margin-top:2px;">{{ n.tipo === 'like' ? '❤️' : n.tipo === 'comment' ? '💬' : '📢' }}</span>
+                <div style="flex:1; min-width:0;">
+                  <p style="color:white; font-size:0.8rem; margin:0; word-wrap:break-word;">{{ n.mensaje }}</p>
+                  <span style="color:var(--text-muted); font-size:0.65rem;">{{ new Date(n.created_at).toLocaleDateString('es-UY', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) }}</span>
+                </div>
+                <span v-if="!n.leida" style="width:8px; height:8px; border-radius:50%; background:#eab308; flex-shrink:0; margin-top:6px;"></span>
+              </div>
+            </div>
+          </div>
           <button class="btn-danger" @click="logout" aria-label="Cerrar sesión">🚪 Cerrar Sesión</button>
         </div>
       </div>

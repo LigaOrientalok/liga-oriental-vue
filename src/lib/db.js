@@ -376,6 +376,16 @@ export const db = {
     return data || []
   },
 
+  async uploadFile(file) {
+    const userId = (await supabase.auth.getUser()).data.user?.id || 'anonymous'
+    const ext = file.name.split('.').pop()
+    const filePath = `${userId}/${Date.now()}.${ext}`
+    const { error } = await supabase.storage.from('liga-media').upload(filePath, file)
+    if (error) handleError('Error uploading file:', error)
+    const { data: { publicUrl } } = supabase.storage.from('liga-media').getPublicUrl(filePath)
+    return publicUrl
+  },
+
   async createMedia(titulo, descripcion, tipo, contenido) {
     const user = (await supabase.auth.getUser()).data.user
     const { data, error } = await supabase.from('liga_media').insert({
@@ -455,6 +465,64 @@ export const db = {
   async deleteComment(id) {
     const { error } = await supabase.from('liga_media_comments').delete().eq('id', id)
     if (error) handleError('Error deleting comment:', error)
+  },
+
+  // ---- Notifications ----
+  async getNotificaciones() {
+    const { data, error } = await supabase
+      .from('notificaciones')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50)
+    if (error) handleError('Error fetching notifications:', error)
+    return data || []
+  },
+
+  async marcarLeida(id) {
+    const { error } = await supabase.from('notificaciones').update({ leida: true }).eq('id', id)
+    if (error) handleError('Error marking notification as read:', error)
+  },
+
+  async marcarTodasLeidas() {
+    const { error } = await supabase.from('notificaciones').update({ leida: true }).eq('leida', false)
+    if (error) handleError('Error marking all notifications as read:', error)
+  },
+
+  async notifCount() {
+    const { count, error } = await supabase
+      .from('notificaciones')
+      .select('*', { count: 'exact', head: true })
+      .eq('leida', false)
+    if (error) return 0
+    return count || 0
+  },
+
+  // ---- Alineaciones ----
+  async getAlineaciones(fixtureId) {
+    const { data, error } = await supabase.from('alineaciones').select('*').eq('fixture_id', fixtureId)
+    if (error) handleError('Error fetching alineaciones:', error)
+    return data || []
+  },
+
+  async setAlineacion(fixtureId, equipoId, jugadorId, titular = true) {
+    const { error } = await supabase.from('alineaciones').upsert({
+      fixture_id: fixtureId, equipo_id: equipoId, jugador_id: jugadorId, titular
+    }, { onConflict: 'fixture_id,equipo_id,jugador_id' })
+    if (error) handleError('Error setting alineacion:', error)
+  },
+
+  async removeAlineacion(fixtureId, equipoId, jugadorId) {
+    const { error } = await supabase.from('alineaciones').delete()
+      .eq('fixture_id', fixtureId).eq('equipo_id', equipoId).eq('jugador_id', jugadorId)
+    if (error) handleError('Error removing alineacion:', error)
+  },
+
+  // ---- Sanciones activas para un jugador ----
+  async getSancionesJugador(jugadorId) {
+    const { data, error } = await supabase.from('sanciones').select('*')
+      .eq('jugador_id', jugadorId).eq('activa', true)
+    if (error) handleError('Error fetching sanciones:', error)
+    return data || []
   },
 
   // ---- @mentions search ----

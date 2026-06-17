@@ -13,10 +13,12 @@ const routes = [
   { path: '/historial', name: 'Historial', component: () => import('../views/HistoryView.vue') },
   { path: '/misiones', name: 'Misiones', component: () => import('../views/MisionesView.vue') },
   { path: '/admin', name: 'Admin', component: () => import('../views/AdminView.vue'), meta: { requiresAuth: true } },
+  { path: '/perfil', name: 'Perfil', component: () => import('../views/ProfileView.vue'), meta: { requiresAuth: true } },
   { path: '/delegado', name: 'Delegado', component: () => import('../views/DelegadoView.vue'), meta: { requiresDelegado: true } },
   { path: '/jugador/:id', name: 'JugadorDetail', component: () => import('../views/PlayerDetailView.vue') },
   { path: '/equipo/:id', name: 'TeamDetail', component: () => import('../views/TeamDetailView.vue') },
   { path: '/comparar', name: 'Comparar', component: () => import('../views/CompareView.vue') },
+  { path: '/live', name: 'Live', component: () => import('../views/LiveView.vue') },
   { path: '/ranking', name: 'Ranking', component: () => import('../views/RankingsView.vue') },
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]

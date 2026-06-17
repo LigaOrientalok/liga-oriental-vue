@@ -19,6 +19,7 @@ const equipos = ref([])
 const fixture = ref([])
 const resultados = ref([])
 const allGoles = ref([])
+const sanciones = ref([])
 const loading = ref(true)
 
 const equipoJugador = computed(() => {
@@ -90,6 +91,9 @@ const chartOptions = {
       const { data: goles } = await supabase.from('goles').select('*').in('resultado_id', resIds)
       allGoles.value = goles || []
     }
+    if (route.params.id) {
+      sanciones.value = await db.getSancionesJugador(parseInt(route.params.id))
+    }
   } finally { loading.value = false }
 }
 
@@ -149,6 +153,14 @@ onMounted(async () => { await loadData() })
         <div class="box" style="text-align:center; padding:15px;">
           <div style="font-size:1.5rem; font-weight:bold; color:#eab308;">{{ jugador.vallas_invictas || 0 }}</div>
           <div style="font-size:0.75rem; color:var(--text-muted);">🧤 Vallas Inv.</div>
+        </div>
+      </div>
+
+      <div v-if="sanciones.length" class="box" style="border-left:4px solid #ef4444;">
+        <h4 style="color:#ef4444; margin-bottom:10px;">⚠️ Sanciones Activas</h4>
+        <div v-for="s in sanciones" :key="s.id" style="margin-bottom:8px; padding:8px; background:rgba(239,68,68,0.1); border-radius:6px;">
+          <p style="color:white; font-size:0.85rem; margin:0;">{{ s.motivo }}</p>
+          <span style="color:var(--text-muted); font-size:0.75rem;">{{ s.fecha_inicio || '-' }} → {{ s.fecha_fin || 'indefinido' }}</span>
         </div>
       </div>
 

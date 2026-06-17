@@ -22,6 +22,8 @@ const loading = ref(true)
 
 const equipoId = computed(() => auth.userData?.equipo_id)
 
+const sancionadosIds = computed(() => new Set(sanciones.value.filter(s => s.activa).map(s => s.jugador_id)))
+
 const jugadoresDelEquipo = computed(() => {
   if (!equipoId.value) return []
   return jugadores.value.filter(j => j.equipos?.includes(equipoId.value))
@@ -97,6 +99,7 @@ async function cargarDatos() {
     pagos.value = pg
   } catch (e) { toast.error('Error al cargar datos') }
   finally { loading.value = false }
+  if (fixture.value.length) await cargarAlineaciones()
 }
 
 // Mercado Pago
@@ -144,9 +147,36 @@ async function generarPagoMP() {
   }
 }
 
+const alineacionesPorPartido = ref({})
+
+async function toggleAlineacion(fixtureId, jugadorId) {
+  if (!equipoId.value) return
+  const key = fixtureId
+  if (!alineacionesPorPartido.value[key]) alineacionesPorPartido.value[key] = []
+  const idx = alineacionesPorPartido.value[key].indexOf(jugadorId)
+  if (idx > -1) {
+    alineacionesPorPartido.value[key].splice(idx, 1)
+    await db.removeAlineacion(fixtureId, equipoId.value, jugadorId)
+  } else {
+    alineacionesPorPartido.value[key].push(jugadorId)
+    await db.setAlineacion(fixtureId, equipoId.value, jugadorId)
+  }
+}
+
+async function cargarAlineaciones() {
+  if (!proximosPartidos.value.length) return
+  for (const f of proximosPartidos.value) {
+    const alis = await db.getAlineaciones(f.id)
+    alineacionesPorPartido.value[f.id] = alis
+      .filter(a => a.equipo_id === equipoId.value)
+      .map(a => a.jugador_id)
+  }
+}
+
 const tabs = [
   { id: 'equipo', label: 'Mi Equipo' },
   { id: 'partidos', label: 'Partidos' },
+  { id: 'alineaciones', label: 'Alineaciones' },
   { id: 'sanciones', label: 'Sanciones' },
   { id: 'pagos', label: 'Pagos' }
 ]
@@ -305,6 +335,41 @@ onMounted(async () => {
                 {{ f.resultado.goles_local }} - {{ f.resultado.goles_visitante }}
               </span>
             </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- ALINEACIONES -->
+      <div v-if="activeTab === 'alineaciones'" style="margin-top:15px;">
+        <div v-if="loading" class="spinner"><div class="spinner-ring"></div><span>Cargando...</span></div>
+        <template v-else>
+          <div v-if="proximosPartidos.length === 0" class="box" style="text-align:center; padding:30px;">
+            <p style="color:var(--text-muted);">No hay partidos próximos para cargar alineación</p>
+          </div>
+          <div v-for="f in proximosPartidos" :key="f.id" class="box">
+            <h4 style="color:#eab308; margin-bottom:10px;">
+              🆚 {{ f.local_nombre }} vs {{ f.visit_nombre }}
+              <span style="display:block; font-size:0.75rem; color:var(--text-muted); margin-top:2px;">{{ f.fecha }} {{ f.hora }}</span>
+            </h4>
+            <div v-if="jugadoresDelEquipo.length === 0" style="color:var(--text-muted);">Sin jugadores en el equipo</div>
+            <div v-else style="display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:6px;">
+              <div v-for="j in jugadoresDelEquipo" :key="j.id"
+                @click="toggleAlineacion(f.id, j.id)"
+                style="padding:8px; border-radius:6px; cursor:pointer; display:flex; align-items:center; gap:8px; border:1px solid; font-size:0.8rem;"
+                :style="{
+                  background: (alineacionesPorPartido[f.id] || []).includes(j.id) ? 'rgba(34,197,94,0.15)' : 'var(--bg-input)',
+                  borderColor: (alineacionesPorPartido[f.id] || []).includes(j.id) ? '#22c55e' : 'var(--border)',
+                  opacity: sancionadosIds.has(j.id) ? 0.6 : 1
+                }"
+              >
+                <span style="font-size:0.9rem;">{{ (alineacionesPorPartido[f.id] || []).includes(j.id) ? '✅' : '⬜' }}</span>
+                <span style="color:white;">{{ j.nombre }}</span>
+                <span v-if="sancionadosIds.has(j.id)" style="margin-left:auto; color:#ef4444; font-size:0.75rem;" title="Suspendido">🔴</span>
+              </div>
+            </div>
+            <p style="color:var(--text-muted); font-size:0.75rem; margin-top:6px;">
+              Seleccionados: {{ (alineacionesPorPartido[f.id] || []).length }} / {{ jugadoresDelEquipo.length }}
+            </p>
           </div>
         </template>
       </div>

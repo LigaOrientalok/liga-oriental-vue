@@ -70,7 +70,12 @@ async function subirMedia() {
   if (uploadTipo.value === 'video' && !uploadPreview.value?.trim()) { toast.warning('Ingresá la URL del video'); return }
   uploadSaving.value = true
   try {
-    const contenido = uploadTipo.value === 'imagen' ? uploadPreview.value : uploadPreview.value.trim()
+    let contenido
+    if (uploadTipo.value === 'imagen') {
+      contenido = await db.uploadFile(uploadArchivo.value)
+    } else {
+      contenido = uploadPreview.value.trim()
+    }
     await db.createMedia(uploadTitulo.value.trim(), uploadDesc.value.trim() || null, uploadTipo.value, contenido)
     toast.success('✅ Subido')
     uploadTitulo.value = ''; uploadDesc.value = ''; uploadTipo.value = 'imagen'
