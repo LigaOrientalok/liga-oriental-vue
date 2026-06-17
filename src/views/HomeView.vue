@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { db } from '../lib/db'
 import { useAuthStore } from '../stores/authStore'
 import { useToastStore } from '../stores/toastStore'
@@ -9,6 +9,14 @@ const toast = useToastStore()
 
 const mediaItems = ref([])
 const showUpload = ref(false)
+const selectedMedia = ref(null)
+
+function abrirMedia(m) { selectedMedia.value = m }
+function cerrarMedia() { selectedMedia.value = null }
+function onKeydown(e) { if (e.key === 'Escape') cerrarMedia() }
+
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 const uploadTitulo = ref('')
 const uploadDesc = ref('')
 const uploadTipo = ref('imagen')
@@ -109,16 +117,29 @@ onMounted(() => { cargarMedia() })
       No hay contenido multimedia todavía
     </div>
     <div v-else style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:12px;">
-      <div v-for="m in mediaItems" :key="m.id" style="background:var(--bg-input); border-radius:8px; overflow:hidden; border:1px solid var(--border); position:relative;">
+      <div v-for="m in mediaItems" :key="m.id" style="background:var(--bg-input); border-radius:8px; overflow:hidden; border:1px solid var(--border); position:relative; cursor:pointer;">
         <template v-if="m.tipo === 'video'">
-          <iframe :src="m.contenido" frameborder="0" allowfullscreen style="width:100%; aspect-ratio:16/9;"></iframe>
+          <iframe :src="m.contenido" frameborder="0" allowfullscreen style="width:100%; aspect-ratio:16/9; pointer-events:none;" @click="abrirMedia(m)"></iframe>
         </template>
-        <img v-else :src="m.contenido" :alt="m.titulo" style="width:100%; aspect-ratio:16/9; object-fit:cover;" />
+        <img v-else :src="m.contenido" :alt="m.titulo" style="width:100%; aspect-ratio:16/9; object-fit:cover;" @click="abrirMedia(m)" />
         <div style="padding:8px;">
           <strong style="color:white; font-size:0.85rem; display:block;">{{ m.titulo }}</strong>
           <span v-if="m.descripcion" style="color:var(--text-muted); font-size:0.75rem;">{{ m.descripcion }}</span>
         </div>
         <button v-if="auth.isAdmin" @click="eliminarMedia(m.id)" class="btn-mini" style="position:absolute; top:6px; right:6px; background:rgba(239,68,68,0.8); color:white; padding:2px 8px; font-size:0.7rem;">🗑️</button>
+      </div>
+    </div>
+
+    <div v-if="selectedMedia" @click.self="cerrarMedia" style="position:fixed; inset:0; background:rgba(0,0,0,0.85); display:flex; align-items:center; justify-content:center; z-index:9999; padding:20px;">
+      <div style="position:relative; max-width:90vw; max-height:90vh;">
+        <button @click="cerrarMedia" style="position:absolute; top:-36px; right:0; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">✕</button>
+        <div style="background:var(--bg-card); border-radius:8px; padding:12px; max-width:90vw; max-height:90vh; overflow:auto;">
+          <template v-if="selectedMedia.tipo === 'video'">
+            <iframe :src="selectedMedia.contenido" frameborder="0" allowfullscreen style="width:80vw; max-width:900px; aspect-ratio:16/9; border-radius:6px;"></iframe>
+          </template>
+          <img v-else :src="selectedMedia.contenido" :alt="selectedMedia.titulo" style="max-width:80vw; max-height:75vh; border-radius:6px; object-fit:contain;" />
+          <p style="color:white; margin-top:8px; text-align:center;">{{ selectedMedia.titulo }}</p>
+        </div>
       </div>
     </div>
   </div>
