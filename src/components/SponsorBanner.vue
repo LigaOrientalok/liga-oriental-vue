@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { supabase } from '../lib/supabase'
+import { sanitizarIframeSrc } from '../lib/helpers'
 
 const sponsors = ref([])
 const current = ref(0)
@@ -36,7 +37,7 @@ onUnmounted(() => {
     <div class="sponsor-slide">
       <template v-if="sponsors[current]?.tipo === 'video'">
         <iframe
-          :src="sponsors[current].contenido"
+          :src="sanitizarIframeSrc(sponsors[current].contenido)"
           frameborder="0"
           allowfullscreen
           class="sponsor-video"

@@ -30,7 +30,7 @@ export const useAuthStore = defineStore('auth', {
           await this.loadUserData()
         }
       } catch (e) {
-        console.error('Error en auth init:', e)
+        if (import.meta.env.DEV) console.error('Error en auth init:', e)
       } finally {
         this.loading = false
       }
@@ -50,7 +50,7 @@ export const useAuthStore = defineStore('auth', {
           this.userData = newUser || { rol: 'usuario', estado: 'pendiente' }
         }
       } catch (e) {
-        console.error('Error loading user data:', e)
+        if (import.meta.env.DEV) console.error('Error loading user data:', e)
       }
     },
 

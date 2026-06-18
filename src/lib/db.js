@@ -9,6 +9,14 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
+function pickAllowed(updates, allowed) {
+  const sanitized = {}
+  for (const k of allowed) {
+    if (k in updates) sanitized[k] = updates[k]
+  }
+  return sanitized
+}
+
 function isNetworkError(error) {
   return !error?.code && (error?.message?.includes('Failed to fetch') ||
     error?.message?.includes('NetworkError') ||
@@ -16,9 +24,13 @@ function isNetworkError(error) {
     error?.message?.includes('ERR_INTERNET_DISCONNECTED'))
 }
 
+function logError(context, error) {
+  if (import.meta.env.DEV) console.error(context, error)
+}
+
 async function handleError(context, error, retryFn = null) {
   if (error) {
-    console.error(context, error)
+    logError(context, error)
 
     if (isNetworkError(error) && retryFn) {
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -28,7 +40,7 @@ async function handleError(context, error, retryFn = null) {
           return result
         } catch (retryError) {
           if (attempt === MAX_RETRIES) {
-            console.error(`${context} (after ${MAX_RETRIES} retries):`, retryError)
+            logError(`${context} (after ${MAX_RETRIES} retries):`, retryError)
           }
         }
       }
@@ -70,7 +82,8 @@ export const db = {
   },
 
   async updateTorneo(id, updates) {
-    const { data, error } = await supabase.from('torneos').update(updates).eq('id', id).select()
+    const allowed = pickAllowed(updates, ['nombre', 'descripcion'])
+    const { data, error } = await supabase.from('torneos').update(allowed).eq('id', id).select()
     const result = await handleError('Error updating torneo:', error)
     if (result?.error) return null
     return data?.[0]
@@ -111,7 +124,8 @@ export const db = {
   },
 
   async updateEquipo(id, updates) {
-    const { data, error } = await supabase.from('equipos').update(updates).eq('id', id).select()
+    const allowed = pickAllowed(updates, ['nombre', 'dia_semana', 'logo'])
+    const { data, error } = await supabase.from('equipos').update(allowed).eq('id', id).select()
     const result = await handleError('Error updating equipo:', error)
     if (result?.error) return null
     return data?.[0]
@@ -149,7 +163,8 @@ export const db = {
   },
 
   async updateJugador(id, updates) {
-    const { data, error } = await supabase.from('jugadores').update(updates).eq('id', id).select()
+    const allowed = pickAllowed(updates, ['ci', 'nombre', 'posicion', 'pierna', 'foto'])
+    const { data, error } = await supabase.from('jugadores').update(allowed).eq('id', id).select()
     const result = await handleError('Error updating jugador:', error)
     if (result?.error) return null
     return data?.[0]
@@ -228,7 +243,8 @@ export const db = {
   },
 
   async updateResultado(id, updates) {
-    const { data, error } = await supabase.from('resultados').update(updates).eq('id', id).select()
+    const allowed = pickAllowed(updates, ['goles_local', 'goles_visitante', 'mvp_id', 'estado'])
+    const { data, error } = await supabase.from('resultados').update(allowed).eq('id', id).select()
     const result = await handleError('Error updating resultado:', error)
     if (result?.error) return null
     return data?.[0]
@@ -281,7 +297,8 @@ export const db = {
   },
 
   async updateSancion(id, updates) {
-    const { data, error } = await supabase.from('sanciones').update(updates).eq('id', id).select()
+    const allowed = pickAllowed(updates, ['motivo', 'tipo', 'fecha_inicio', 'fecha_fin', 'activa'])
+    const { data, error } = await supabase.from('sanciones').update(allowed).eq('id', id).select()
     const result = await handleError('Error updating sancion:', error)
     if (result?.error) return null
     return data?.[0]
@@ -300,7 +317,8 @@ export const db = {
   },
 
   async updateConfig(id, updates) {
-    const { data, error } = await supabase.from('configuracion').update(updates).eq('id', id).select()
+    const allowed = pickAllowed(updates, ['titulo', 'logo_url', 'color_primario', 'color_secundario', 'fondo_oscuro', 'fondo_claro'])
+    const { data, error } = await supabase.from('configuracion').update(allowed).eq('id', id).select()
     const result = await handleError('Error updating config:', error)
     if (result?.error) return null
     return data?.[0]
@@ -332,7 +350,8 @@ export const db = {
   },
 
   async updatePago(id, updates) {
-    const { data, error } = await supabase.from('pagos').update(updates).eq('id', id).select()
+    const allowed = pickAllowed(updates, ['concepto', 'monto', 'estado', 'mp_preference_id', 'mp_payment_id'])
+    const { data, error } = await supabase.from('pagos').update(allowed).eq('id', id).select()
     const result = await handleError('Error updating pago:', error)
     if (result?.error) return null
     return data?.[0]
@@ -359,7 +378,8 @@ export const db = {
   },
 
   async updateSponsor(id, updates) {
-    const { data, error } = await supabase.from('sponsors').update(updates).eq('id', id).select().single()
+    const allowed = pickAllowed(updates, ['nombre', 'tipo', 'contenido', 'link', 'orden', 'activo'])
+    const { data, error } = await supabase.from('sponsors').update(allowed).eq('id', id).select().single()
     if (error) handleError('Error updating sponsor:', error)
     return data
   },
@@ -409,7 +429,8 @@ export const db = {
   },
 
   async updateMedia(id, updates) {
-    const { data, error } = await supabase.from('liga_media').update(updates).eq('id', id).select().single()
+    const allowed = pickAllowed(updates, ['titulo', 'descripcion', 'tipo', 'contenido'])
+    const { data, error } = await supabase.from('liga_media').update(allowed).eq('id', id).select().single()
     if (error) handleError('Error updating media:', error)
     return data
   },

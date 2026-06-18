@@ -41,7 +41,7 @@ export async function exportarJSON(torneoId) {
     toast.success('JSON exportado')
   } catch (e) {
     toast.error('Error exportando JSON')
-    console.error(e)
+    if (import.meta.env.DEV) console.error(e)
   }
 }
 
@@ -67,7 +67,7 @@ export async function exportarCSV(torneoId) {
     toast.success('CSV exportado')
   } catch (e) {
     toast.error('Error exportando CSV')
-    console.error(e)
+    if (import.meta.env.DEV) console.error(e)
   }
 }
 
@@ -111,7 +111,7 @@ export async function exportarPDF(torneoId) {
     toast.success('HTML listo. Abrí el archivo y usá Ctrl+P para imprimir/PDF.')
   } catch (e) {
     toast.error('Error exportando PDF')
-    console.error(e)
+    if (import.meta.env.DEV) console.error(e)
   }
 }
 
@@ -147,7 +147,7 @@ export async function respaldarDatos() {
     toast.success('Respaldo completado')
   } catch (e) {
     toast.error('Error en respaldo')
-    console.error(e)
+    if (import.meta.env.DEV) console.error(e)
   }
 }
 
@@ -197,7 +197,8 @@ export function restaurarRespaldo() {
       toast.success('Respaldo restaurado correctamente. Recarga la pagina.')
       setTimeout(() => location.reload(), 1500)
     } catch (e) {
-      toast.error('Error al restaurar: ' + e.message)
+      if (import.meta.env.DEV) console.error(e)
+      toast.error('Error al restaurar. Verificá que el archivo sea válido.')
     }
   }
   input.click()
@@ -269,6 +270,6 @@ export async function recomputarEstadisticas(torneoId) {
     toast.success('Estadisticas recalculadas')
   } catch (e) {
     toast.error('Error al recomputar')
-    console.error(e)
+    if (import.meta.env.DEV) console.error(e)
   }
 }

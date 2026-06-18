@@ -127,11 +127,11 @@ async function loadData() {
 }
 
 watch(() => torneo.torneoActual, async () => {
-  if (torneo.torneoActual) try { await loadData() } catch (e) { console.error(e) }
+  if (torneo.torneoActual) try { await loadData() } catch (e) { if (import.meta.env.DEV) console.error(e) }
 })
 
 onMounted(async () => {
-  if (torneo.torneoActual) try { await loadData() } catch (e) { console.error(e) }
+  if (torneo.torneoActual) try { await loadData() } catch (e) { if (import.meta.env.DEV) console.error(e) }
 })
 </script>
 

@@ -21,7 +21,7 @@ export function enviarNotificacion(titulo, opciones = {}) {
     setTimeout(() => notif.close(), 8000)
     return notif
   } catch (e) {
-    console.error('Error enviando notificación:', e)
+    if (import.meta.env.DEV) console.error('Error enviando notificación:', e)
   }
 }
 

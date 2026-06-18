@@ -119,7 +119,7 @@ async function loadData() {
 }
 
 watch(() => torneo.torneoActual, async () => {
-  if (torneo.torneoActual) try { await loadData() } catch (e) { console.error(e) }
+  if (torneo.torneoActual) try { await loadData() } catch (e) { if (import.meta.env.DEV) console.error(e) }
 })
 
 watch(diaFiltro, () => {
@@ -325,7 +325,7 @@ async function guardarResultado() {
     limpiarFormulario()
   } catch (e) {
     toast.error('Error al guardar resultado')
-    console.error(e)
+    if (import.meta.env.DEV) console.error(e)
   } finally {
     saving.value = false
   }
@@ -433,7 +433,7 @@ function limpiarFormulario() {
 }
 
 onMounted(async () => {
-  if (torneo.torneoActual) try { await loadData() } catch (e) { console.error(e) }
+  if (torneo.torneoActual) try { await loadData() } catch (e) { if (import.meta.env.DEV) console.error(e) }
 })
 </script>
 

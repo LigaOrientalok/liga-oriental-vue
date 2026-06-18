@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { db } from '../lib/db'
+import { sanitizarIframeSrc } from '../lib/helpers'
 import { useAuthStore } from '../stores/authStore'
 import { useToastStore } from '../stores/toastStore'
 
@@ -52,7 +53,7 @@ function parseMentions(text) {
 
 async function cargarMedia() {
   try { mediaItems.value = await db.getMedia() }
-  catch (e) { console.error(e) }
+  catch (e) { if (import.meta.env.DEV) console.error(e) }
 }
 
 function onUploadFile(e) {
@@ -99,7 +100,7 @@ async function abrirMedia(m) {
     ])
     likeCount.value = likesResult.count; userLiked.value = likesResult.userLiked
     comments.value = commentsResult
-  } catch (e) { console.error(e)
+  } catch (e) { if (import.meta.env.DEV) console.error(e)
   } finally { likeLoading.value = false }
 }
 
@@ -114,7 +115,7 @@ async function toggleLike() {
   try {
     const result = await db.toggleLike(selectedMedia.value.id)
     if (result) { likeCount.value = result.count; userLiked.value = result.userLiked }
-  } catch (e) { console.error(e)
+  } catch (e) { if (import.meta.env.DEV) console.error(e)
   } finally { likeLoading.value = false }
 }
 
@@ -229,7 +230,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
     <div v-else style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap:12px;">
       <div v-for="m in mediaItems" :key="m.id" style="background:var(--bg-input); border-radius:8px; overflow:hidden; border:1px solid var(--border); position:relative; cursor:pointer;">
         <template v-if="m.tipo === 'video'">
-          <iframe :src="m.contenido" frameborder="0" allowfullscreen style="width:100%; aspect-ratio:16/9; pointer-events:none;" @click="abrirMedia(m)"></iframe>
+          <iframe :src="sanitizarIframeSrc(m.contenido)" frameborder="0" allowfullscreen style="width:100%; aspect-ratio:16/9; pointer-events:none;" @click="abrirMedia(m)"></iframe>
         </template>
         <img v-else :src="m.contenido" :alt="m.titulo" style="width:100%; aspect-ratio:16/9; object-fit:cover;" @click="abrirMedia(m)" />
         <div style="padding:8px;">
@@ -254,7 +255,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
             <!-- media -->
             <div style="background:#000; text-align:center; padding:8px;">
               <template v-if="selectedMedia.tipo === 'video'">
-                <iframe :src="selectedMedia.contenido" frameborder="0" allowfullscreen
+                <iframe :src="sanitizarIframeSrc(selectedMedia.contenido)" frameborder="0" allowfullscreen
                   style="width:100%; max-width:900px; aspect-ratio:16/9; border-radius:6px;"
 ></iframe>
               </template>

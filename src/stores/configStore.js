@@ -38,7 +38,7 @@ export const useConfigStore = defineStore('config', {
         }
         this.applyToDOM()
       } catch (e) {
-        console.error('Error loading config:', e)
+        if (import.meta.env.DEV) console.error('Error loading config:', e)
       }
     },
 
@@ -68,7 +68,7 @@ export const useConfigStore = defineStore('config', {
         this.applyToDOM()
         return true
       } catch (e) {
-        console.error('Error saving config:', e)
+        if (import.meta.env.DEV) console.error('Error saving config:', e)
         return false
       }
     }

@@ -35,7 +35,7 @@ export const useTorneoStore = defineStore('torneo', {
           await this.loadData()
         }
       } catch (e) {
-        console.error('Error initializing torneo store:', e)
+        if (import.meta.env.DEV) console.error('Error initializing torneo store:', e)
       }
     },
 
