@@ -11,6 +11,7 @@ const password2 = ref('')
 const message = ref('')
 const loading = ref(false)
 const touched = ref({ email: false, password: false, password2: false })
+const aceptaPrivacidad = ref(false)
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -183,7 +184,11 @@ async function handleGoogleLogin() {
       :style="{ borderColor: password2Error ? '#ef4444' : '' }"
     />
     <p v-if="password2Error" style="color:#ef4444; font-size:0.8rem; margin:-10px 0 10px;">{{ password2Error }}</p>
-    <button class="btn-main" @click="handleRegister" :disabled="loading" style="background:#22c55e; color:white; margin-bottom:10px;">
+    <label style="display:flex; align-items:center; gap:8px; margin:12px 0; font-size:0.8rem; color:var(--text-muted); cursor:pointer;">
+      <input type="checkbox" v-model="aceptaPrivacidad" style="width:16px;height:16px;accent-color:#eab308;" />
+      Acepto la <a href="/privacidad" target="_blank" style="color:#eab308; margin-left:4px;">Política de Privacidad</a>
+    </label>
+    <button class="btn-main" @click="handleRegister" :disabled="loading || !aceptaPrivacidad" style="background:#22c55e; color:white; margin-bottom:10px;">
       {{ loading ? '⏳ Registrando...' : 'Registrarse' }}
     </button>
     <button class="btn-main" @click="isRegister = false; message = ''; touched = { email: false, password: false, password2: false }" style="background:#30363d; color:white;">
