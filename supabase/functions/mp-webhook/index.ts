@@ -74,7 +74,8 @@ serve(async (req) => {
 
 async function procesarPago(paymentId: string) {
   if (!MP_ACCESS_TOKEN) { console.error('MP_ACCESS_TOKEN no configurado'); return }
-  const supabase = createClient(SUPABASE_URL || '', SUPABASE_SERVICE_ROLE_KEY || '')
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) { console.error('SUPABASE_URL o SERVICE_ROLE_KEY no configurados'); return }
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
   const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
     headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}` }
   })
