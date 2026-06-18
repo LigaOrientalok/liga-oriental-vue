@@ -10,6 +10,7 @@ import IntroOverlay from './components/IntroOverlay.vue'
 import SponsorBanner from './components/SponsorBanner.vue'
 import { exportarJSON, exportarCSV, exportarPDF, respaldarDatos, recomputarEstadisticas, restaurarRespaldo } from './lib/export'
 import { db } from './lib/db'
+import { pedirPermisoNotificaciones } from './lib/notifications'
 
 const router = useRouter()
 const route = useRoute()
@@ -34,6 +35,8 @@ const navItems = [
   { path: '/live', label: 'LIVE', icon: '📺' },
   { path: '/comparar', label: 'VS', icon: '⚔️' },
   { path: '/ranking', label: 'RANKING', icon: '📈' },
+  { path: '/feed', label: 'ACTIVIDAD', icon: '📰' },
+  { path: '/predicciones', label: 'PRONÓSTICOS', icon: '🔮' },
   { path: '/delegado', label: 'DELEGADO', icon: '👔' },
   { path: '/admin', label: 'ADMIN', icon: '⚙️' }
 ]
@@ -139,6 +142,10 @@ async function verificarNotificaciones() {
   } catch { notifCount.value = 0 }
 }
 
+function togglePushPermiso() {
+  pedirPermisoNotificaciones()
+}
+
 onMounted(async () => {
   await config.loadConfig()
   await auth.init()
@@ -203,10 +210,12 @@ onUnmounted(() => {
           <button class="hamburger" @click="navOpen = !navOpen" aria-label="Abrir menú de navegación">☰</button>
           <button class="btn-icon" @click="themeStore.toggleTheme(); config.applyBackground()" aria-label="Cambiar tema">{{ themeStore.theme === 'dark' ? '☀️' : '🌙' }}</button>
           <button class="btn-icon" @click="router.push('/perfil')" aria-label="Perfil">👤</button>
+          <button class="btn-icon" @click="togglePushPermiso" aria-label="Notificaciones push" title="Activar notificaciones push">🔕</button>
           <div class="notif-wrapper" style="position:relative;">
             <button class="btn-icon btn-notif" @click.stop="toggleNotifDropdown" aria-label="Notificaciones">🔔<span v-if="notifCount > 0" class="notif-badge">{{ notifCount }}</span></button>
             <div v-if="showNotifDropdown"
-              style="position:absolute; top:100%; right:0; width:320px; max-height:400px; overflow-y:auto; background:var(--bg-card); border:1px solid var(--border); border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,0.5); z-index:100; margin-top:6px;">
+              style="position:absolute; top:100%; right:0; width:320px; max-height:400px; overflow-y:auto; background:var(--bg-card); border:1px solid var(--border); border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,0.5); z-index:100; margin-top:6px;"
+>
               <div style="padding:10px 12px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
                 <strong style="color:white; font-size:0.85rem;">Notificaciones</strong>
                 <button v-if="notifCount > 0" @click="marcarTodasLeidas" style="background:none; border:none; color:#eab308; cursor:pointer; font-size:0.75rem;">Marcar todo leído</button>
@@ -214,7 +223,8 @@ onUnmounted(() => {
               <div v-if="notifList.length === 0" style="color:var(--text-muted); text-align:center; padding:20px; font-size:0.8rem;">Sin notificaciones</div>
               <div v-for="n in notifList" :key="n.id" @click="irANotificacion(n)"
                 style="padding:10px 12px; cursor:pointer; display:flex; align-items:flex-start; gap:8px; border-bottom:1px solid var(--border);"
-                :style="{ background: n.leida ? 'transparent' : 'rgba(234,179,8,0.08)' }">
+                :style="{ background: n.leida ? 'transparent' : 'rgba(234,179,8,0.08)' }"
+>
                 <span style="font-size:1.1rem; flex-shrink:0; margin-top:2px;">{{ n.tipo === 'like' ? '❤️' : n.tipo === 'comment' ? '💬' : '📢' }}</span>
                 <div style="flex:1; min-width:0;">
                   <p style="color:white; font-size:0.8rem; margin:0; word-wrap:break-word;">{{ n.mensaje }}</p>

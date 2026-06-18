@@ -6,6 +6,7 @@ import { useAuthStore } from '../stores/authStore'
 import { useToastStore } from '../stores/toastStore'
 import { db } from '../lib/db'
 import { notificarResultado, pedirPermisoNotificaciones } from '../lib/notifications'
+import MvpVote from '../components/MvpVote.vue'
 
 const torneo = useTorneoStore()
 const auth = useAuthStore()
@@ -314,6 +315,11 @@ async function guardarResultado() {
     }
 
     notificarResultado(e1.nombre, e2.nombre, g1, g2)
+    await supabase.from('actividad').insert({
+      tipo: 'resultado',
+      usuario_id: auth.user?.id,
+      mensaje: `⚽ ${e1.nombre} ${g1} - ${g2} ${e2.nombre}`
+    })
     toast.success('¡Resultado guardado!')
     await loadData()
     limpiarFormulario()
@@ -601,6 +607,22 @@ onMounted(async () => {
       <button @click="guardarResultado" class="btn-main" style="margin-top:15px;" :disabled="saving">
         {{ saving ? '⏳ Guardando...' : '✅ GUARDAR RESULTADO' }}
       </button>
+    </div>
+
+    <!-- MVP Voting (for all users) -->
+    <div class="box">
+      <h3 style="color:#eab308; margin-bottom:12px;">🏆 Votá al MVP</h3>
+      <div v-for="r in resultados.filter(r => r.estado === 'finalizado')" :key="r.id" style="border-bottom:1px solid var(--border); padding:12px 0;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div>
+            <strong style="color:white;">{{ getEqName(r.equipo_local_id) }} {{ r.goles_local }} - {{ r.goles_visitante }} {{ getEqName(r.equipo_visitante_id) }}</strong>
+          </div>
+          <MvpVote :resultado-id="r.id" :team-a-id="r.equipo_local_id" :team-b-id="r.equipo_visitante_id" />
+        </div>
+      </div>
+      <div v-if="resultados.filter(r => r.estado === 'finalizado').length === 0" style="color:var(--text-muted); text-align:center; padding:20px;">
+        No hay partidos finalizados todavía
+      </div>
     </div>
 
     <!-- Confirm Modal -->

@@ -12,7 +12,7 @@ const routes = [
   { path: '/equipos', name: 'Equipos', component: () => import('../views/TeamsView.vue') },
   { path: '/historial', name: 'Historial', component: () => import('../views/HistoryView.vue') },
   { path: '/misiones', name: 'Misiones', component: () => import('../views/MisionesView.vue') },
-  { path: '/admin', name: 'Admin', component: () => import('../views/AdminView.vue'), meta: { requiresAuth: true } },
+  { path: '/admin', name: 'Admin', component: () => import('../views/AdminView.vue'), meta: { requiresAdmin: true } },
   { path: '/perfil', name: 'Perfil', component: () => import('../views/ProfileView.vue'), meta: { requiresAuth: true } },
   { path: '/delegado', name: 'Delegado', component: () => import('../views/DelegadoView.vue'), meta: { requiresDelegado: true } },
   { path: '/jugador/:id', name: 'JugadorDetail', component: () => import('../views/PlayerDetailView.vue') },
@@ -20,6 +20,8 @@ const routes = [
   { path: '/comparar', name: 'Comparar', component: () => import('../views/CompareView.vue') },
   { path: '/live', name: 'Live', component: () => import('../views/LiveView.vue') },
   { path: '/ranking', name: 'Ranking', component: () => import('../views/RankingsView.vue') },
+  { path: '/feed', name: 'Feed', component: () => import('../views/FeedView.vue') },
+  { path: '/predicciones', name: 'Predicciones', component: () => import('../views/PredictionsView.vue'), meta: { requiresAuth: true } },
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
@@ -31,6 +33,9 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const auth = useAuthStore()
   if (to.meta.requiresAuth) {
+    if (!auth.isLoggedIn) return next('/')
+  }
+  if (to.meta.requiresAdmin) {
     if (!auth.isLoggedIn || !auth.isAdmin) return next('/')
   }
   if (to.meta.requiresDelegado) {

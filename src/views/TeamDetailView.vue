@@ -1,7 +1,9 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { supabase } from '../lib/supabase'
 import { useTorneoStore } from '../stores/torneoStore'
+import { useAuthStore } from '../stores/authStore'
 import { db } from '../lib/db'
 import { calcularRating } from '../lib/playerStats'
 
@@ -14,6 +16,43 @@ const jugadores = ref([])
 const fixture = ref([])
 const resultados = ref([])
 const loading = ref(true)
+const auth = useAuthStore()
+
+const tab = ref('info')
+const mensajes = ref([])
+const msgText = ref('')
+const chatLoading = ref(false)
+let chatSub = null
+
+async function loadChat() {
+  if (!equipo.value) return
+  chatLoading.value = true
+  try { mensajes.value = await db.getMensajes(equipo.value.id) }
+  finally { chatLoading.value = false }
+}
+
+function subscribeChat() {
+  if (chatSub) chatSub.unsubscribe()
+  if (!equipo.value) return
+  chatSub = supabase
+    .channel(`chat-${equipo.value.id}`)
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_mensajes', filter: `equipo_id=eq.${equipo.value.id}` }, async () => {
+      mensajes.value = await db.getMensajes(equipo.value.id)
+      await nextTick()
+      const el = document.querySelector('.chat-scroll')
+      if (el) el.scrollTop = el.scrollHeight
+    })
+    .subscribe()
+}
+
+async function enviarMsg() {
+  const text = msgText.value.trim()
+  if (!text || !equipo.value) return
+  msgText.value = ''
+  await db.enviarMensaje(equipo.value.id, text)
+}
+
+onUnmounted(() => { if (chatSub) chatSub.unsubscribe() })
 
 const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Crect fill='%2330363d' width='150' height='150'/%3E%3Ctext fill='%238b949e' font-family='sans-serif' font-size='14' text-anchor='middle' x='75' y='85'%3ESin Foto%3C/text%3E%3C/svg%3E"
 
@@ -60,10 +99,14 @@ async function loadData() {
       db.getFixture(torneo.torneoActual),
       db.getResultados(torneo.torneoActual)
     ])
-    equipo.value = eqs.find(e => e.id === parseInt(route.params.id)) || null
     jugadores.value = jgs
     fixture.value = fx
     resultados.value = rs
+    equipo.value = eqs.find(e => e.id === parseInt(route.params.id)) || null
+    if (equipo.value) {
+      await loadChat()
+      subscribeChat()
+    }
   } finally { loading.value = false }
 }
 
@@ -83,6 +126,12 @@ onMounted(async () => {
     <div v-else-if="!equipo" class="box" style="text-align:center; color:#ef4444; padding:30px;">Equipo no encontrado</div>
 
     <template v-else>
+      <div class="box" style="display:flex; gap:10px; margin-bottom:10px;">
+        <button class="btn-mini" :style="{ background: tab === 'info' ? '#eab308' : 'var(--border)', color: tab === 'info' ? 'black' : 'white' }" @click="tab = 'info'">📊 Info</button>
+        <button class="btn-mini" :style="{ background: tab === 'chat' ? '#eab308' : 'var(--border)', color: tab === 'chat' ? 'black' : 'white' }" @click="tab = 'chat'">💬 Chat</button>
+      </div>
+
+      <template v-if="tab === 'info'">
       <div class="box" style="text-align:center; padding:30px;">
         <div
           v-if="equipo.logo"
@@ -186,6 +235,29 @@ onMounted(async () => {
           </div>
         </div>
       </div>
+      </template>
+
+      <template v-if="tab === 'chat'">
+      <div class="box">
+        <h4 style="color:#eab308; margin-bottom:10px;">💬 Chat de {{ equipo.nombre }}</h4>
+        <div class="chat-scroll" style="max-height:400px; overflow-y:auto; margin-bottom:10px; display:flex; flex-direction:column; gap:6px;">
+          <div v-if="chatLoading" style="color:var(--text-muted); text-align:center;">Cargando...</div>
+          <div v-else-if="mensajes.length === 0" style="color:var(--text-muted); text-align:center;">Sin mensajes</div>
+          <div v-for="m in mensajes" :key="m.id" style="background:var(--bg-input); border-radius:8px; padding:8px;">
+            <div style="display:flex; justify-content:space-between; font-size:0.75rem;">
+              <strong style="color:#eab308;">{{ m.username }}</strong>
+              <span style="color:var(--text-muted);">{{ new Date(m.created_at).toLocaleTimeString('es-UY', { hour:'2-digit', minute:'2-digit' }) }}</span>
+            </div>
+            <p style="color:white; margin:4px 0 0; font-size:0.85rem;">{{ m.mensaje }}</p>
+          </div>
+        </div>
+        <div v-if="auth.isLoggedIn" style="display:flex; gap:8px;">
+          <input v-model="msgText" @keyup.enter="enviarMsg" placeholder="Escribí un mensaje..." style="flex:1; padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
+          <button @click="enviarMsg" class="btn-mini" style="background:#eab308; color:black;">Enviar</button>
+        </div>
+        <p v-else style="color:var(--text-muted); font-size:0.8rem;">Iniciá sesión para chatear</p>
+      </div>
+      </template>
     </template>
   </section>
 </template>

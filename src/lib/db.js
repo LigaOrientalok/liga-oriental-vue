@@ -392,6 +392,10 @@ export const db = {
       titulo, descripcion, tipo, contenido, uploaded_by: user?.id || null
     }).select().single()
     if (error) handleError('Error creating media:', error)
+    if (data) {
+      const email = user?.email?.split('@')[0] || 'Alguien'
+      await supabase.from('actividad').insert({ tipo: 'media', usuario_id: user?.id, mensaje: `📸 ${email} subió "${titulo}"`, referencia_id: data.id })
+    }
     return data
   },
 
@@ -459,6 +463,11 @@ export const db = {
     if (!userId) return
     const { data, error } = await supabase.from('liga_media_comments').insert({ media_id: mediaId, user_id: userId, contenido }).select().single()
     if (error) handleError('Error adding comment:', error)
+    if (data) {
+      const user = (await supabase.auth.getUser()).data.user
+      const email = user?.email?.split('@')[0] || 'Alguien'
+      await supabase.from('actividad').insert({ tipo: 'comentario', usuario_id: userId, mensaje: `💬 ${email} comentó "${contenido.substring(0, 50)}"`, referencia_id: mediaId })
+    }
     return data
   },
 
@@ -537,5 +546,101 @@ export const db = {
       jugadores: jugRes.data || [],
       equipos: eqRes.data || []
     }
+  },
+
+  // ---- Feed ----
+  async getFeed(limit = 20) {
+    const { data, error } = await supabase.from('actividad').select('*').order('created_at', { ascending: false }).limit(limit)
+    if (error) handleError('Error fetching feed:', error)
+    return data || []
+  },
+
+  async logActividad(tipo, mensaje, referenciaId = null) {
+    const user = (await supabase.auth.getUser()).data.user
+    const { error } = await supabase.from('actividad').insert({
+      tipo, usuario_id: user?.id || null, mensaje, referencia_id: referenciaId
+    })
+    if (error) handleError('Error logging activity:', error)
+  },
+
+  // ---- Predicciones ----
+  async getPredicciones(fixtureId) {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    const [allPreds, myPred] = await Promise.all([
+      supabase.from('predicciones').select('*, usuarios!inner(email)').eq('fixture_id', fixtureId),
+      userId ? supabase.from('predicciones').select('*').eq('fixture_id', fixtureId).eq('user_id', userId).maybeSingle() : { data: null }
+    ])
+    return {
+      all: allPreds.data || [],
+      mine: myPred.data || null
+    }
+  },
+
+  async setPrediccion(fixtureId, golesLocal, golesVisitante) {
+    const user = (await supabase.auth.getUser()).data.user
+    if (!user) return
+    const { error } = await supabase.from('predicciones').upsert({
+      fixture_id: fixtureId, user_id: user.id, goles_local: golesLocal, goles_visitante: golesVisitante,
+    }, { onConflict: 'fixture_id,user_id' })
+    if (error) handleError('Error saving prediccion:', error)
+    const email = user.email?.split('@')[0] || 'Alguien'
+    await supabase.from('actividad').insert({ tipo: 'prediccion', usuario_id: user.id, mensaje: `🔮 ${email} pronosticó ${golesLocal}-${golesVisitante}` })
+  },
+
+  async getRankingPredicciones() {
+    const { data, error } = await supabase
+      .from('predicciones')
+      .select('user_id, usuarios!inner(email), puntos')
+      .order('puntos', { ascending: false })
+    if (error) handleError('Error fetching ranking:', error)
+    const rank = {}
+    for (const p of data || []) {
+      if (!rank[p.user_id]) rank[p.user_id] = { email: p.usuarios?.email?.split('@')[0] || p.user_id, puntos: 0 }
+      rank[p.user_id].puntos += (p.puntos || 0)
+    }
+    return Object.values(rank).sort((a, b) => b.puntos - a.puntos)
+  },
+
+  // ---- MVP ----
+  async getMvpVotos(resultadoId) {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    const [votos, miVoto] = await Promise.all([
+      supabase.from('mvp_votos').select('*, jugadores!inner(nombre)').eq('resultado_id', resultadoId),
+      userId ? supabase.from('mvp_votos').select('*').eq('resultado_id', resultadoId).eq('user_id', userId).maybeSingle() : { data: null }
+    ])
+    return { votos: votos.data || [], miVoto: miVoto.data || null }
+  },
+
+  async votarMvp(resultadoId, jugadorId) {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) return
+    const { error } = await supabase.from('mvp_votos').upsert({
+      resultado_id: resultadoId, user_id: userId, jugador_id: jugadorId
+    }, { onConflict: 'resultado_id,user_id' })
+    if (error) handleError('Error voting MVP:', error)
+  },
+
+  // ---- Chat ----
+  async getMensajes(equipoId) {
+    const { data, error } = await supabase
+      .from('chat_mensajes')
+      .select('*, usuarios!inner(email)')
+      .eq('equipo_id', equipoId)
+      .order('created_at', { ascending: true })
+      .limit(100)
+    if (error) handleError('Error fetching messages:', error)
+    return (data || []).map(m => ({
+      ...m,
+      username: m.usuarios?.email?.split('@')[0] || 'Usuario'
+    }))
+  },
+
+  async enviarMensaje(equipoId, mensaje) {
+    const userId = (await supabase.auth.getUser()).data.user?.id
+    if (!userId) return
+    const { error } = await supabase.from('chat_mensajes').insert({
+      equipo_id: equipoId, user_id: userId, mensaje
+    })
+    if (error) handleError('Error sending message:', error)
   }
 }

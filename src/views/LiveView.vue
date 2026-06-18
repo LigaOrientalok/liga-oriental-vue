@@ -65,6 +65,8 @@ async function addGoal() {
       minuto: parseInt(addGoalMinuto.value)
     })
     await recomputar()
+    const jug = jugadores.value.find(j => j.id === addGoalJugador.value)
+    await supabase.from('actividad').insert({ tipo: 'gol', mensaje: `⚽ ${jug?.nombre || 'Alguien'} metió gol en vivo` })
     toast.success('⚽ Gol agregado')
     addGoalJugador.value = null
     addGoalMinuto.value = ''
@@ -77,6 +79,7 @@ async function finalizarPartido() {
   try {
     await supabase.from('resultados').update({ estado: 'finalizado' }).eq('id', resultado.value.id)
     await recomputar()
+    await supabase.from('actividad').insert({ tipo: 'resultado', mensaje: `🏁 ${getEq(selectedFixture.value.equipo_local_id)?.nombre} vs ${getEq(selectedFixture.value.equipo_visitante_id)?.nombre} finalizado` })
     toast.success('✅ Partido finalizado')
   } catch (e) { toast.error('Error al finalizar')
   }
@@ -205,7 +208,8 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
           </option>
         </select>
         <button class="btn-main" @click="addGoal" :disabled="addGoalSaving || !addGoalJugador || !addGoalMinuto"
-          style="background:#22c55e; color:white; margin-top:10px;">
+          style="background:#22c55e; color:white; margin-top:10px;"
+>
           {{ addGoalSaving ? '⏳' : '⚽ Agregar Gol' }}
         </button>
       </div>

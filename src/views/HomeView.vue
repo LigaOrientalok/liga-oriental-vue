@@ -242,31 +242,37 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
     <!-- Lightbox -->
     <div v-if="selectedMedia" @click.self="cerrarMedia"
-      style="position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:9999; overflow-y:auto; padding:30px 20px;">
+      style="position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:9999; overflow-y:auto; padding:30px 20px;"
+>
       <!-- wrapper that centers vertically only when content fits -->
       <div style="min-height:calc(100vh - 60px); display:flex; align-items:center; justify-content:center;">
         <div style="position:relative; width:100%; max-width:800px;">
           <button @click="cerrarMedia"
-            style="position:absolute; top:-36px; right:0; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; z-index:1;">✕</button>
+            style="position:absolute; top:-36px; right:0; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; z-index:1;"
+>✕</button>
           <div style="background:var(--bg-card); border-radius:10px; overflow:hidden;">
             <!-- media -->
             <div style="background:#000; text-align:center; padding:8px;">
               <template v-if="selectedMedia.tipo === 'video'">
                 <iframe :src="selectedMedia.contenido" frameborder="0" allowfullscreen
-                  style="width:100%; max-width:900px; aspect-ratio:16/9; border-radius:6px;"></iframe>
+                  style="width:100%; max-width:900px; aspect-ratio:16/9; border-radius:6px;"
+></iframe>
               </template>
               <img v-else :src="selectedMedia.contenido" :alt="selectedMedia.titulo"
-                style="max-width:100%; max-height:70vh; border-radius:6px; object-fit:contain;" />
+                style="max-width:100%; max-height:70vh; border-radius:6px; object-fit:contain;"
+/>
             </div>
             <!-- info + likes + comments -->
             <div style="padding:12px 16px;">
               <strong style="color:white; font-size:0.95rem;">{{ selectedMedia.titulo }}</strong>
               <span v-if="selectedMedia.descripcion"
-                style="display:block; color:var(--text-muted); font-size:0.8rem; margin-top:2px;">{{ selectedMedia.descripcion }}</span>
+                style="display:block; color:var(--text-muted); font-size:0.8rem; margin-top:2px;"
+>{{ selectedMedia.descripcion }}</span>
               <!-- like -->
               <div style="display:flex; align-items:center; gap:12px; margin-top:8px;">
                 <button @click="toggleLike" :disabled="likeLoading"
-                  style="background:none; border:none; cursor:pointer; font-size:1.3rem; display:flex; align-items:center; gap:4px; padding:0; color:inherit;">
+                  style="background:none; border:none; cursor:pointer; font-size:1.3rem; display:flex; align-items:center; gap:4px; padding:0; color:inherit;"
+>
                   <span :style="{ color: userLiked ? '#ef4444' : '#9ca3af' }">{{ userLiked ? '❤️' : '🤍' }}</span>
                   <span style="color:var(--text-muted); font-size:0.85rem;">{{ likeCount }}</span>
                 </button>
@@ -274,7 +280,8 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
               <!-- comments -->
               <div style="margin-top:8px; border-top:1px solid var(--border); padding-top:8px; max-height:180px; overflow-y:auto;">
                 <div v-for="c in comments" :key="c.id"
-                  style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+                  style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;"
+>
                   <div>
                     <strong style="color:#eab308; font-size:0.75rem;">{{ c.username }}</strong>
                     <p style="color:white; font-size:0.8rem; margin:0;">
@@ -285,20 +292,24 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                     </p>
                   </div>
                   <button v-if="auth.user?.id === c.user_id || auth.isAdmin" @click="borrarComentario(c.id)"
-                    style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:0.7rem; padding:2px;">🗑️</button>
+                    style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:0.7rem; padding:2px;"
+>🗑️</button>
                 </div>
                 <div v-if="comments.length === 0" style="color:var(--text-muted); font-size:0.8rem; text-align:center; padding:6px;">Sin comentarios</div>
               </div>
               <!-- add comment -->
               <div v-if="auth.user" style="position:relative; margin-top:8px;">
                 <div v-if="showMentions && mentionList.length"
-                  style="position:absolute; bottom:100%; left:0; width:100%; background:var(--bg-card); border:1px solid var(--border); border-radius:8px; max-height:160px; overflow-y:auto; z-index:10; box-shadow:0 -4px 12px rgba(0,0,0,0.4); margin-bottom:4px;">
+                  style="position:absolute; bottom:100%; left:0; width:100%; background:var(--bg-card); border:1px solid var(--border); border-radius:8px; max-height:160px; overflow-y:auto; z-index:10; box-shadow:0 -4px 12px rgba(0,0,0,0.4); margin-bottom:4px;"
+>
                   <div v-for="(item, mi) in mentionList" :key="item._type + '-' + item.id"
                     @click="selectMention(item)" @mouseenter="mentionIndex = mi"
                     style="padding:6px 10px; cursor:pointer; display:flex; align-items:center; gap:8px; font-size:0.8rem;"
-                    :style="{ background: mi === mentionIndex ? 'var(--bg-input)' : 'transparent' }">
+                    :style="{ background: mi === mentionIndex ? 'var(--bg-input)' : 'transparent' }"
+>
                     <span style="width:6px; height:6px; border-radius:50%; display:inline-block; flex-shrink:0;"
-                      :style="{ background: item._type === 'jugador' ? '#3b82f6' : '#eab308' }"></span>
+                      :style="{ background: item._type === 'jugador' ? '#3b82f6' : '#eab308' }"
+></span>
                     <span :style="{ color: item._type === 'jugador' ? '#93c5fd' : '#fde68a' }">{{ item.nombre }}</span>
                     <span style="color:var(--text-muted); font-size:0.65rem; margin-left:auto;">{{ item._type === 'jugador' ? 'Jugador' : 'Equipo' }}</span>
                   </div>
@@ -306,9 +317,11 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
                 <div style="display:flex; gap:6px;">
                   <input ref="commentInputRef" type="text" v-model="newComment"
                     placeholder="Escribí un comentario... (usá @ para mencionar)"
-                    @input="onCommentInput" @keydown="onCommentKeydown" style="flex:1; font-size:0.8rem;" />
+                    @input="onCommentInput" @keydown="onCommentKeydown" style="flex:1; font-size:0.8rem;"
+/>
                   <button @click="enviarComentario" :disabled="commentSaving || !newComment.trim()"
-                    class="btn-mini" style="background:#eab308; color:black; font-size:0.75rem; padding:4px 10px;">{{ commentSaving ? '⏳' : 'Enviar' }}</button>
+                    class="btn-mini" style="background:#eab308; color:black; font-size:0.75rem; padding:4px 10px;"
+>{{ commentSaving ? '⏳' : 'Enviar' }}</button>
                 </div>
               </div>
             </div>
