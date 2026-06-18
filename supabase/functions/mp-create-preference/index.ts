@@ -11,6 +11,21 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, content-type, apikey, x-client-info',
 }
 
+const ALLOWED_ORIGINS = (Deno.env.get('ALLOWED_ORIGINS') || '').split(',').filter(Boolean)
+
+function isValidOrigin(origin: string | null): boolean {
+  if (!origin) return false
+  if (ALLOWED_ORIGINS.length === 0) {
+    return origin.includes('localhost') || (SUPABASE_URL ? origin.includes(new URL(SUPABASE_URL).hostname) : false)
+  }
+  return ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed.replace(/\/+$/, '')))
+}
+
+function redirectBase(origin: string | null): string {
+  if (origin && isValidOrigin(origin)) return origin
+  return SUPABASE_URL ? new URL(SUPABASE_URL).origin : ''
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -27,6 +42,11 @@ serve(async (req) => {
 
     const { data: { user }, error: userError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
     if (userError || !user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+
+    const origin = req.headers.get('origin')
+    if (!isValidOrigin(origin)) {
+      return new Response(JSON.stringify({ error: 'Origen no autorizado' }), { status: 403, headers: corsHeaders })
+    }
 
     const { torneo_id, concepto, monto, equipo_id } = await req.json()
 
@@ -66,6 +86,8 @@ serve(async (req) => {
       throw new Error('MP_ACCESS_TOKEN no configurado')
     }
 
+    const baseUrl = redirectBase(origin)
+
     const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',
       headers: {
@@ -81,9 +103,9 @@ serve(async (req) => {
         }],
         notification_url: `${SUPABASE_URL}/functions/v1/mp-webhook`,
         back_urls: {
-          success: `${req.headers.get('origin') || ''}/delegado`,
-          failure: `${req.headers.get('origin') || ''}/delegado`,
-          pending: `${req.headers.get('origin') || ''}/delegado`
+          success: `${baseUrl}/delegado`,
+          failure: `${baseUrl}/delegado`,
+          pending: `${baseUrl}/delegado`
         },
         auto_return: 'approved',
         external_reference: pago.id.toString()

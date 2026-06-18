@@ -40,7 +40,7 @@ async function handleError(context, error, retryFn = null) {
     } else if (error.code === 'PGRST116') {
       toast.warning('No se encontraron datos')
     } else {
-      toast.error(`Error: ${error.message || 'Error inesperado'}`)
+      toast.error('Ocurrió un error. Intentalo de nuevo.')
     }
     return { error: true, data: null }
   }
@@ -377,6 +377,16 @@ export const db = {
   },
 
   async uploadFile(file) {
+    const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/webm']
+    const MAX_SIZE = 10 * 1024 * 1024
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      useToastStore().error('Tipo de archivo no permitido. Solo imágenes y videos.')
+      return null
+    }
+    if (file.size > MAX_SIZE) {
+      useToastStore().error('Archivo muy grande. Máximo 10MB.')
+      return null
+    }
     const userId = (await supabase.auth.getUser()).data.user?.id || 'anonymous'
     const ext = file.name.split('.').pop()
     const filePath = `${userId}/${Date.now()}.${ext}`
@@ -393,8 +403,7 @@ export const db = {
     }).select().single()
     if (error) handleError('Error creating media:', error)
     if (data) {
-      const email = user?.email?.split('@')[0] || 'Alguien'
-      await supabase.from('actividad').insert({ tipo: 'media', usuario_id: user?.id, mensaje: `📸 ${email} subió "${titulo}"`, referencia_id: data.id })
+      await supabase.from('actividad').insert({ tipo: 'media', usuario_id: user?.id, mensaje: `📸 Se subió "${titulo}"`, referencia_id: data.id })
     }
     return data
   },
@@ -464,9 +473,7 @@ export const db = {
     const { data, error } = await supabase.from('liga_media_comments').insert({ media_id: mediaId, user_id: userId, contenido }).select().single()
     if (error) handleError('Error adding comment:', error)
     if (data) {
-      const user = (await supabase.auth.getUser()).data.user
-      const email = user?.email?.split('@')[0] || 'Alguien'
-      await supabase.from('actividad').insert({ tipo: 'comentario', usuario_id: userId, mensaje: `💬 ${email} comentó "${contenido.substring(0, 50)}"`, referencia_id: mediaId })
+      await supabase.from('actividad').insert({ tipo: 'comentario', usuario_id: userId, mensaje: `💬 Se comentó "${contenido.substring(0, 50)}"`, referencia_id: mediaId })
     }
     return data
   },
@@ -583,8 +590,7 @@ export const db = {
       fixture_id: fixtureId, user_id: user.id, goles_local: golesLocal, goles_visitante: golesVisitante,
     }, { onConflict: 'fixture_id,user_id' })
     if (error) handleError('Error saving prediccion:', error)
-    const email = user.email?.split('@')[0] || 'Alguien'
-    await supabase.from('actividad').insert({ tipo: 'prediccion', usuario_id: user.id, mensaje: `🔮 ${email} pronosticó ${golesLocal}-${golesVisitante}` })
+    await supabase.from('actividad').insert({ tipo: 'prediccion', usuario_id: user.id, mensaje: `🔮 Se pronosticó ${golesLocal}-${golesVisitante}` })
   },
 
   async getRankingPredicciones() {

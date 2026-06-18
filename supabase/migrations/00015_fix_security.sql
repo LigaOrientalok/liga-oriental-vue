@@ -12,8 +12,14 @@ $$;
 DROP POLICY IF EXISTS "Sistema inserta actividad" ON actividad;
 CREATE POLICY "Sistema inserta actividad" ON actividad FOR INSERT TO authenticated WITH CHECK (auth.uid() = usuario_id);
 
--- Fix: Storage RLS para bucket liga-media
-CREATE POLICY "Upload liga-media" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'liga-media');
+-- Fix: Storage RLS para bucket liga-media (con validacion de extension)
+DROP POLICY IF EXISTS "Upload liga-media" ON storage.objects;
+DROP POLICY IF EXISTS "Select liga-media" ON storage.objects;
+DROP POLICY IF EXISTS "Delete liga-media" ON storage.objects;
+CREATE POLICY "Upload liga-media" ON storage.objects FOR INSERT TO authenticated WITH CHECK (
+  bucket_id = 'liga-media' AND
+  storage.extension(name) IN ('jpg', 'jpeg', 'png', 'gif', 'webp', 'mp4', 'webm')
+);
 CREATE POLICY "Select liga-media" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'liga-media');
 CREATE POLICY "Delete liga-media" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'liga-media' AND public.get_user_role() = 'admin');
 

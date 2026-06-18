@@ -65,8 +65,7 @@ async function addGoal() {
       minuto: parseInt(addGoalMinuto.value)
     })
     await recomputar()
-    const jug = jugadores.value.find(j => j.id === addGoalJugador.value)
-    await supabase.from('actividad').insert({ tipo: 'gol', mensaje: `⚽ ${jug?.nombre || 'Alguien'} metió gol en vivo` })
+    await supabase.from('actividad').insert({ tipo: 'gol', mensaje: `⚽ Gol en vivo` })
     toast.success('⚽ Gol agregado')
     addGoalJugador.value = null
     addGoalMinuto.value = ''
