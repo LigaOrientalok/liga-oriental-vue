@@ -271,5 +271,8 @@ onUnmounted(() => {
       <SponsorBanner v-if="auth.isApproved" />
       <router-view />
     </main>
+    <footer style="text-align:center; padding:20px; font-size:0.75rem; color:var(--text-muted); border-top:1px solid var(--border); margin-top:20px;">
+      <router-link to="/privacidad" style="color:#eab308; text-decoration:none;">Política de Privacidad</router-link>
+    </footer>
   </template>
 </template>

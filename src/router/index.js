@@ -22,6 +22,7 @@ const routes = [
   { path: '/ranking', name: 'Ranking', component: () => import('../views/RankingsView.vue') },
   { path: '/feed', name: 'Feed', component: () => import('../views/FeedView.vue') },
   { path: '/predicciones', name: 'Predicciones', component: () => import('../views/PredictionsView.vue'), meta: { requiresAuth: true } },
+  { path: '/privacidad', name: 'Privacidad', component: () => import('../views/PrivacyView.vue') },
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 

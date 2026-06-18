@@ -196,4 +196,8 @@ async function handleGoogleLogin() {
 >
     {{ message }}
   </div>
+  <p style="text-align:center; margin-top:20px; font-size:0.75rem; color:var(--text-muted);">
+    Al iniciar sesión aceptás nuestra
+    <a href="/privacidad" style="color:#eab308;">Política de Privacidad</a>
+  </p>
 </template>
