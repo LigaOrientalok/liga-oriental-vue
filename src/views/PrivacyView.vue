@@ -4,7 +4,7 @@ import { useConfigStore } from '../stores/configStore'
 
 const config = useConfigStore()
 const appName = config.titulo || 'Liga Oriental'
-const email = 'bolso2340@gmail.com'
+const email = config.email_contacto || 'bolso2340@gmail.com'
 </script>
 
 <template>

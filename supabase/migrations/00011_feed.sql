@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS actividad (
 );
 ALTER TABLE actividad ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Feed visible para todos" ON actividad FOR SELECT TO authenticated USING (true);
-CREATE POLICY "Sistema inserta actividad" ON actividad FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Sistema inserta actividad" ON actividad FOR INSERT TO authenticated WITH CHECK (auth.uid() = usuario_id);
 
 -- Trigger: log goles automaticamente
 CREATE OR REPLACE FUNCTION log_gol_actividad()

@@ -1,9 +1,9 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const MP_ACCESS_TOKEN = Deno.env.get('MP_ACCESS_TOKEN') || ''
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL') || ''
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+const MP_ACCESS_TOKEN = Deno.env.get('MP_ACCESS_TOKEN')
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,15 +20,35 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return new Response(JSON.stringify({ error: 'No token' }), { status: 401, headers: corsHeaders })
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    const supabase = createClient(SUPABASE_URL || '', SUPABASE_SERVICE_ROLE_KEY || '')
 
     const { data: { user }, error: userError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
     if (userError || !user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
 
     const { torneo_id, concepto, monto, equipo_id } = await req.json()
 
-    if (!concepto || !monto || monto <= 0) {
-      return new Response(JSON.stringify({ error: 'Faltan datos: concepto y monto requeridos' }), { status: 400, headers: corsHeaders })
+    if (!concepto || typeof concepto !== 'string') {
+      return new Response(JSON.stringify({ error: 'Concepto requerido' }), { status: 400, headers: corsHeaders })
+    }
+    if (!monto || typeof monto !== 'number' || monto <= 0 || monto > 100000) {
+      return new Response(JSON.stringify({ error: 'Monto invalido (1-100000)' }), { status: 400, headers: corsHeaders })
+    }
+    if (!torneo_id) {
+      return new Response(JSON.stringify({ error: 'torneo_id requerido' }), { status: 400, headers: corsHeaders })
+    }
+
+    // Verify torneo exists
+    const { data: torneo } = await supabase.from('torneos').select('id').eq('id', torneo_id).maybeSingle()
+    if (!torneo) {
+      return new Response(JSON.stringify({ error: 'Torneo no encontrado' }), { status: 400, headers: corsHeaders })
+    }
+
+    // Verify equipo exists if provided
+    if (equipo_id) {
+      const { data: equipo } = await supabase.from('equipos').select('id').eq('id', equipo_id).maybeSingle()
+      if (!equipo) {
+        return new Response(JSON.stringify({ error: 'Equipo no encontrado' }), { status: 400, headers: corsHeaders })
+      }
     }
 
     const { data: pago, error: insertError } = await supabase
@@ -38,6 +58,10 @@ serve(async (req) => {
       .single()
 
     if (insertError) throw insertError
+
+    if (!MP_ACCESS_TOKEN) {
+      throw new Error('MP_ACCESS_TOKEN no configurado')
+    }
 
     const mpResponse = await fetch('https://api.mercadopago.com/checkout/preferences', {
       method: 'POST',

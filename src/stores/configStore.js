@@ -7,7 +7,8 @@ const DEFAULTS = {
   color_primario: '#eab308',
   color_secundario: '#3b82f6',
   fondo_oscuro: '#0b0e14',
-  fondo_claro: '#f0f2f5'
+  fondo_claro: '#f0f2f5',
+  email_contacto: 'bolso2340@gmail.com'
 }
 
 export const useConfigStore = defineStore('config', {
@@ -18,7 +19,8 @@ export const useConfigStore = defineStore('config', {
     color_primario: DEFAULTS.color_primario,
     color_secundario: DEFAULTS.color_secundario,
     fondo_oscuro: DEFAULTS.fondo_oscuro,
-    fondo_claro: DEFAULTS.fondo_claro
+    fondo_claro: DEFAULTS.fondo_claro,
+    email_contacto: DEFAULTS.email_contacto
   }),
 
   actions: {
