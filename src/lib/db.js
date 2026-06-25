@@ -204,6 +204,14 @@ export const db = {
     return data?.[0]
   },
 
+  async updateFixture(id, updates) {
+    const allowed = pickAllowed(updates, ['dia_semana', 'fecha', 'hora', 'equipo_local_id', 'equipo_visitante_id'])
+    const { data, error } = await supabase.from('fixture').update(allowed).eq('id', id).select()
+    const result = await handleError('Error updating fixture:', error)
+    if (result?.error) return null
+    return data?.[0]
+  },
+
   async deleteFixture(id) {
     const { error } = await supabase.from('fixture').delete().eq('id', id)
     if (error) handleError('Error deleting fixture:', error)

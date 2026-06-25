@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from './stores/authStore'
 import { useTorneoStore } from './stores/torneoStore'
@@ -160,6 +160,15 @@ onMounted(async () => {
 onUnmounted(() => {
   if (notifInterval) clearInterval(notifInterval)
   document.removeEventListener('click', clickFueraNotif)
+})
+
+watch(() => auth.isLoggedIn, async (loggedIn) => {
+  if (loggedIn) {
+    await torneo.init()
+    loadNotifCount()
+    notifInterval = setInterval(loadNotifCount, 30000)
+    document.addEventListener('click', clickFueraNotif)
+  }
 })
 </script>
 

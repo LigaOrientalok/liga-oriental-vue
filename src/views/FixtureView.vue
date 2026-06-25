@@ -56,6 +56,20 @@ const tarjetasE2 = ref([])
 let golKey = 0
 let tarjetaKey = 0
 
+// Edit fixture match
+const editFiId = ref(null)
+const editHora = ref('')
+const editFecha = ref('')
+const editLocal = ref('')
+const editVisitante = ref('')
+
+// Manual fixture creation
+const manualDia = ref('Lunes')
+const manualFecha = ref('')
+const manualHora = ref('20:00')
+const manualLocal = ref('')
+const manualVisitante = ref('')
+
 const equiposDia = computed(() => {
   if (!diaFiltro.value) return []
   return equipos.value.filter(e => e.dia_semana === diaFiltro.value)
@@ -432,6 +446,66 @@ function limpiarFormulario() {
   tarjetasE2.value = []
 }
 
+function toggleEditarFixture(id) {
+  if (editFiId.value === id) { editFiId.value = null; return }
+  const match = fixture.value.find(m => m.id === id)
+  if (!match) return
+  editFiId.value = id
+  editHora.value = match.hora || ''
+  editFecha.value = match.fecha || ''
+  editLocal.value = match.equipo_local_id?.toString() || ''
+  editVisitante.value = match.equipo_visitante_id?.toString() || ''
+}
+
+async function guardarEdicionFixture() {
+  if (!editFiId.value) return
+  if (!editLocal.value || !editVisitante.value) return toast.error('Seleccioná ambos equipos')
+  if (editLocal.value === editVisitante.value) return toast.error('Los equipos deben ser distintos')
+  saving.value = true
+  try {
+    await db.updateFixture(editFiId.value, {
+      hora: editHora.value,
+      fecha: editFecha.value,
+      equipo_local_id: parseInt(editLocal.value),
+      equipo_visitante_id: parseInt(editVisitante.value)
+    })
+    toast.success('✅ Fixture actualizado')
+    editFiId.value = null
+    await loadData()
+  } catch (e) {
+    toast.error('Error al actualizar fixture')
+    if (import.meta.env.DEV) console.error(e)
+  } finally {
+    saving.value = false
+  }
+}
+
+async function crearPartidoManual() {
+  if (!torneo.torneoActual) return toast.error('Seleccioná un torneo')
+  if (!manualLocal.value || !manualVisitante.value) return toast.error('Seleccioná ambos equipos')
+  if (manualLocal.value === manualVisitante.value) return toast.error('Los equipos deben ser distintos')
+  saving.value = true
+  try {
+    await db.createFixture(
+      torneo.torneoActual,
+      manualDia.value,
+      manualFecha.value || `Fecha ${fixture.value.filter(f => f.dia_semana === manualDia.value).length + 1}`,
+      manualHora.value,
+      parseInt(manualLocal.value),
+      parseInt(manualVisitante.value)
+    )
+    toast.success('✅ Partido creado')
+    manualLocal.value = ''
+    manualVisitante.value = ''
+    await loadData()
+  } catch (e) {
+    toast.error('Error al crear partido')
+    if (import.meta.env.DEV) console.error(e)
+  } finally {
+    saving.value = false
+  }
+}
+
 onMounted(async () => {
   if (torneo.torneoActual) try { await loadData() } catch (e) { if (import.meta.env.DEV) console.error(e) }
 })
@@ -463,6 +537,44 @@ onMounted(async () => {
       </div>
     </div>
 
+    <!-- Manual fixture creation (admin only) -->
+    <div v-if="auth.isAdmin" class="box">
+      <h3>➕ Crear Partido Manual</h3>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:end;">
+        <div>
+          <label class="label-accent">Día:</label>
+          <select v-model="manualDia" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
+            <option>Lunes</option><option value="Miercoles">Miércoles</option><option>Jueves</option><option>Viernes</option><option value="Sabado">Sábado</option><option>Domingo</option>
+          </select>
+        </div>
+        <div>
+          <label class="label-accent">Fecha:</label>
+          <input type="text" v-model="manualFecha" placeholder="Ej: Fecha 1" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border); width:120px;">
+        </div>
+        <div>
+          <label class="label-accent">Hora:</label>
+          <input type="time" v-model="manualHora" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
+        </div>
+        <div>
+          <label class="label-accent">Local:</label>
+          <select v-model="manualLocal" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
+            <option value="">Seleccionar...</option>
+            <option v-for="eq in equipos" :key="eq.id" :value="eq.id">{{ eq.nombre }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="label-accent">Visitante:</label>
+          <select v-model="manualVisitante" style="padding:8px; border-radius:6px; background:var(--bg-input); color:white; border:1px solid var(--border);">
+            <option value="">Seleccionar...</option>
+            <option v-for="eq in equipos" :key="eq.id" :value="eq.id">{{ eq.nombre }}</option>
+          </select>
+        </div>
+        <button @click="crearPartidoManual" class="btn-mini" style="background:#3b82f6; color:white;" :disabled="saving">
+          {{ saving ? '⏳' : 'Crear Partido' }}
+        </button>
+      </div>
+    </div>
+
     <!-- Fixture Display -->
     <div class="box">
       <h3>📋 Fixture</h3>
@@ -476,27 +588,49 @@ onMounted(async () => {
             :key="m.id"
             class="fixture-item"
             :class="resPorFixture[m.id] ? 'finalizado' : 'pendiente'"
-            style="display:flex; justify-content:space-between; align-items:center; padding:15px; background:var(--bg-input); border-radius:8px; margin-bottom:10px;"
+            style="padding:15px; background:var(--bg-input); border-radius:8px; margin-bottom:10px;"
           >
-            <span style="font-weight:600; color:#eab308; min-width:50px;">{{ m.hora }}</span>
-            <div style="flex:1; text-align:right; font-weight:600;">{{ getEqName(m.equipo_local_id) }}</div>
-            <div style="margin:0 15px; font-size:0.9rem; font-weight:700; color:var(--text-muted);">
-              <template v-if="resPorFixture[m.id]">
-                <span style="color:#22c55e;">{{ resPorFixture[m.id].goles_local }} - {{ resPorFixture[m.id].goles_visitante }}</span>
-              </template>
-              <template v-else>VS</template>
-            </div>
-            <div style="flex:1; font-weight:600;">{{ getEqName(m.equipo_visitante_id) }}</div>
-            <div v-if="auth.isAdmin" style="display:flex; gap:5px; margin-left:10px;">
-              <template v-if="resPorFixture[m.id]">
-                <button @click="cargarEdicionResultado(m.id)" class="btn-mini" style="background:#3b82f6; color:white; padding:4px 10px; font-size:0.75rem;">✏️</button>
-                <button @click="eliminarResultadoCompleto(m.id)" class="btn-mini" style="background:#ef4444; color:white; padding:4px 10px; font-size:0.75rem;">🗑️</button>
-              </template>
-              <template v-else>
-                <button @click="cargarResultadoDeFixture(m.id)" class="btn-mini" style="background:#22c55e; color:white; padding:4px 10px; font-size:0.75rem;">⚽</button>
-                <button @click="eliminarPartido(m.id)" class="btn-mini" style="background:#ef4444; color:white; padding:4px 10px; font-size:0.75rem;">🗑️</button>
-              </template>
-            </div>
+            <template v-if="editFiId === m.id">
+              <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                <input type="time" v-model="editHora" style="padding:6px; border-radius:6px; background:var(--bg); color:white; border:1px solid var(--border); width:100px;">
+                <input type="text" v-model="editFecha" placeholder="Fecha" style="padding:6px; border-radius:6px; background:var(--bg); color:white; border:1px solid var(--border); width:120px;">
+                <select v-model="editLocal" style="padding:6px; border-radius:6px; background:var(--bg); color:white; border:1px solid var(--border);">
+                  <option value="">Local...</option>
+                  <option v-for="eq in equipos" :key="eq.id" :value="eq.id">{{ eq.nombre }}</option>
+                </select>
+                <span style="color:var(--text-muted);">vs</span>
+                <select v-model="editVisitante" style="padding:6px; border-radius:6px; background:var(--bg); color:white; border:1px solid var(--border);">
+                  <option value="">Visitante...</option>
+                  <option v-for="eq in equipos" :key="eq.id" :value="eq.id">{{ eq.nombre }}</option>
+                </select>
+                <button @click="guardarEdicionFixture" class="btn-mini" style="background:#22c55e; color:white; padding:6px 14px;" :disabled="saving">{{ saving ? '⏳' : '💾' }}</button>
+                <button @click="editFiId = null" class="btn-mini" style="background:#6b7280; color:white; padding:6px 14px;">✕</button>
+              </div>
+            </template>
+            <template v-else>
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:600; color:#eab308; min-width:50px;">{{ m.hora }}</span>
+                <div style="flex:1; text-align:right; font-weight:600;">{{ getEqName(m.equipo_local_id) }}</div>
+                <div style="margin:0 15px; font-size:0.9rem; font-weight:700; color:var(--text-muted);">
+                  <template v-if="resPorFixture[m.id]">
+                    <span style="color:#22c55e;">{{ resPorFixture[m.id].goles_local }} - {{ resPorFixture[m.id].goles_visitante }}</span>
+                  </template>
+                  <template v-else>VS</template>
+                </div>
+                <div style="flex:1; font-weight:600;">{{ getEqName(m.equipo_visitante_id) }}</div>
+                <div v-if="auth.isAdmin" style="display:flex; gap:5px; margin-left:10px;">
+                  <button @click="toggleEditarFixture(m.id)" class="btn-mini" style="background:#3b82f6; color:white; padding:4px 10px; font-size:0.75rem;">🔧</button>
+                  <template v-if="resPorFixture[m.id]">
+                    <button @click="cargarEdicionResultado(m.id)" class="btn-mini" style="background:#a855f7; color:white; padding:4px 10px; font-size:0.75rem;">✏️</button>
+                    <button @click="eliminarResultadoCompleto(m.id)" class="btn-mini" style="background:#ef4444; color:white; padding:4px 10px; font-size:0.75rem;">🗑️</button>
+                  </template>
+                  <template v-else>
+                    <button @click="cargarResultadoDeFixture(m.id)" class="btn-mini" style="background:#22c55e; color:white; padding:4px 10px; font-size:0.75rem;">⚽</button>
+                    <button @click="eliminarPartido(m.id)" class="btn-mini" style="background:#ef4444; color:white; padding:4px 10px; font-size:0.75rem;">🗑️</button>
+                  </template>
+                </div>
+              </div>
+            </template>
           </div>
         </div>
       </div>
