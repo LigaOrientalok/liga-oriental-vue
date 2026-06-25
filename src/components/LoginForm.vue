@@ -1,9 +1,11 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useAuthStore } from '../stores/authStore'
+import { useTorneoStore } from '../stores/torneoStore'
 import { supabase } from '../lib/supabase'
 
 const auth = useAuthStore()
+const torneo = useTorneoStore()
 const isRegister = ref(false)
 const email = ref('')
 const password = ref('')
@@ -61,7 +63,8 @@ async function handleLogin() {
   message.value = ''
   try {
     const ok = await auth.login(email.value.trim(), password.value)
-    if (!ok) mostrarError('Email o contraseña incorrectos')
+    if (ok) await torneo.init()
+    else mostrarError('Email o contraseña incorrectos')
   } catch { mostrarError('Error de conexión') }
   loading.value = false
 }
