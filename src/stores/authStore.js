@@ -52,7 +52,7 @@ export const useAuthStore = defineStore('auth', {
       } catch (e) {
         if (import.meta.env.DEV) console.error('Error loading user data:', e)
         if (!this.userData) {
-          this.userData = { id: this.user.id, email: this.user.email, rol: 'usuario', estado: 'pendiente' }
+          this.userData = { id: this.user.id, email: this.user.email, rol: 'usuario', estado: 'aprobado' }
         }
       }
     },
