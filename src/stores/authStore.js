@@ -47,10 +47,13 @@ export const useAuthStore = defineStore('auth', {
             id: this.user.id, email: this.user.email, rol: 'usuario', estado: 'pendiente', fecha_registro: new Date().toISOString()
           }).select().maybeSingle()
           if (insertError) throw insertError
-          this.userData = newUser || { rol: 'usuario', estado: 'pendiente' }
+          this.userData = newUser
         }
       } catch (e) {
         if (import.meta.env.DEV) console.error('Error loading user data:', e)
+        if (!this.userData) {
+          this.userData = { id: this.user.id, email: this.user.email, rol: 'usuario', estado: 'pendiente' }
+        }
       }
     },
 
@@ -70,15 +73,10 @@ export const useAuthStore = defineStore('auth', {
 
     async register(email, password) {
       const toast = useToastStore()
-      const { data, error } = await supabase.auth.signUp({ email, password })
+      const { error } = await supabase.auth.signUp({ email, password })
       if (error) {
         toast.error(error.message)
         return false
-      }
-      if (data?.user) {
-        await supabase.from('usuarios').upsert({
-          id: data.user.id, email: data.user.email, rol: 'usuario', estado: 'pendiente', fecha_registro: new Date().toISOString()
-        })
       }
       toast.success('✅ Cuenta creada. Revisá tu email para confirmar.')
       return true

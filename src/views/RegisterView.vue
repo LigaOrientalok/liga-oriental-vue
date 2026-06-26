@@ -125,6 +125,9 @@ async function savePlayer(btn) {
       }
     }
     previewPlayer.value = null
+  } catch (e) {
+    if (import.meta.env.DEV) console.error('Error al guardar jugador:', e)
+    toast.error('Ocurrió un error al guardar. Intentalo de nuevo.')
   } finally {
     saving.value = false
     if (btn) { btn.disabled = false; btn.textContent = 'VINCULAR / CREAR FICHA' }
