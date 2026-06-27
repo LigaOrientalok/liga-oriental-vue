@@ -151,7 +151,9 @@ export async function respaldarDatos() {
   }
 }
 
-export function restaurarRespaldo() {
+export async function restaurarRespaldo() {
+  const auth = useAuthStore()
+  try { await auth.soloAdmin() } catch { return }
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = '.json'

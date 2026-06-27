@@ -141,18 +141,19 @@ export const db = {
   async getJugadores(torneoId) {
     const { data: jugadores, error } = await supabase.from('jugadores').select('*').eq('torneo_id', torneoId)
     if (error) { handleError('Error fetching jugadores:', error); return [] }
-    const { data: equipos } = await supabase.from('equipos').select('id').eq('torneo_id', torneoId)
-    const equipoIds = equipos?.map(e => e.id) || []
-    if (equipoIds.length > 0) {
-      const { data: vinculos } = await supabase.from('jugador_equipo').select('*').in('equipo_id', equipoIds)
-      if (vinculos) {
-        jugadores.forEach(j => {
-          j.equipos = vinculos.filter(v => v.jugador_id === j.id).map(v => v.equipo_id)
-        })
+    if (jugadores) {
+      const ids = jugadores.map(j => j.id)
+      if (ids.length > 0) {
+        const { data: vinculos } = await supabase.from('jugador_equipo').select('jugador_id, equipo_id').in('jugador_id', ids)
+        if (vinculos) {
+          jugadores.forEach(j => {
+            j.equipos = vinculos.filter(v => v.jugador_id === j.id).map(v => v.equipo_id)
+          })
+        }
       }
+      jugadores.forEach(j => { j.foto = sanitizarImgSrc(j.foto) })
     }
-    if (jugadores) jugadores.forEach(j => { j.foto = sanitizarImgSrc(j.foto) })
-    return jugadores
+    return jugadores || []
   },
 
   async createJugador(torneoId, ci, nombre, posicion, pierna, foto) {
@@ -469,14 +470,8 @@ export const db = {
     } else {
       await supabase.from('liga_media_likes').insert({ media_id: mediaId, user_id: userId })
     }
-    const userId2 = (await supabase.auth.getUser()).data.user?.id
     const { count } = await supabase.from('liga_media_likes').select('*', { count: 'exact', head: true }).eq('media_id', mediaId)
-    let userLiked = false
-    if (userId2) {
-      const { data: myLike } = await supabase.from('liga_media_likes').select('id').eq('media_id', mediaId).eq('user_id', userId2).maybeSingle()
-      userLiked = !!myLike
-    }
-    return { count: count || 0, userLiked }
+    return { count: count || 0, userLiked: !existing }
   },
 
   // ---- Comments ----

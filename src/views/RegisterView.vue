@@ -15,7 +15,7 @@ const nombre = ref('')
 const posicion = ref('DEL')
 const pierna = ref('R')
 const equipoId = ref('')
-const foto = ref(null)
+const fotoFile = ref(null)
 const tempImgJugador = ref(DEFAULT_AVATAR)
 const saving = ref(false)
 const previewPlayer = ref(null)
@@ -45,6 +45,7 @@ function handleFileSelect(e) {
     e.target.value = ''
     return
   }
+  fotoFile.value = file
   fileReader = new FileReader()
   fileReader.onload = async (ev) => {
     tempImgJugador.value = await comprimirImagen(ev.target.result)
@@ -88,7 +89,7 @@ watch(equipoId, () => {
   previewPlayer.value = null
 })
 
-async function savePlayer(btn) {
+async function savePlayer() {
   if (!torneo.torneoActual) return toast.error('Selecciona un torneo')
   const ciVal = ci.value.trim()
   const nomVal = nombre.value.trim().toUpperCase()
@@ -96,9 +97,14 @@ async function savePlayer(btn) {
   if (!ciVal || !nomVal || !eqId) return toast.error('Datos incompletos')
 
   saving.value = true
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Guardando...' }
 
   try {
+    let fotoUrl = tempImgJugador.value
+    if (fotoFile.value && fotoUrl !== DEFAULT_AVATAR) {
+      const uploaded = await db.uploadFile(fotoFile.value)
+      if (uploaded) fotoUrl = uploaded
+    }
+
     const jugadores = await db.getJugadores(torneo.torneoActual)
     const exist = jugadores.find(j => j.ci === ciVal)
 
@@ -117,7 +123,7 @@ async function savePlayer(btn) {
         nomVal,
         posicion.value,
         pierna.value,
-        tempImgJugador.value
+        fotoUrl
       )
       if (nuevoJugador) {
         await db.vincularJugadorEquipo(nuevoJugador.id, eqId)
@@ -130,7 +136,6 @@ async function savePlayer(btn) {
     toast.error('Ocurrió un error al guardar. Intentalo de nuevo.')
   } finally {
     saving.value = false
-    if (btn) { btn.disabled = false; btn.textContent = 'VINCULAR / CREAR FICHA' }
   }
 }
 

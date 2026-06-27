@@ -27,7 +27,7 @@ const emailError = computed(() => {
 const passwordError = computed(() => {
   if (!touched.value.password) return ''
   if (!password.value) return 'La contraseña es requerida'
-  if (isRegister.value && password.value.length < 6) return 'Mínimo 6 caracteres'
+  if (password.value.length < 6) return 'Mínimo 6 caracteres'
   return ''
 })
 
@@ -41,9 +41,10 @@ const password2Error = computed(() => {
 const canSubmit = computed(() => {
   if (isRegister.value) {
     return email.value.trim() && emailRegex.test(email.value.trim()) &&
-      password.value.length >= 6 && password.value === password2.value
+      password.value.length >= 6 && password.value === password2.value &&
+      aceptaPrivacidad.value
   }
-  return email.value.trim() && password.value.length > 0
+  return email.value.trim() && password.value.length >= 6
 })
 
 function mostrarError(msg) {

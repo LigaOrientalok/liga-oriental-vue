@@ -104,6 +104,7 @@ function clickFueraNotif(e) {
 }
 
 async function logout() {
+  clearInterval(notifInterval)
   await auth.logout()
   torneo.$reset()
   router.push('/')
