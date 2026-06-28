@@ -78,8 +78,14 @@ async function handleRegister() {
   try {
     const ok = await auth.register(email.value.trim(), password.value)
     if (ok) {
+      if (auth.isLoggedIn) {
+        isRegister.value = false
+        message.value = ''
+        await torneo.init()
+        return
+      }
       isRegister.value = false
-      mostrarError('✅ Cuenta creada. Revisá tu email para confirmar.')
+      mostrarError('✅ Cuenta creada. Ya podés ingresar.')
     }
   } catch { mostrarError('Error de conexión') }
   loading.value = false

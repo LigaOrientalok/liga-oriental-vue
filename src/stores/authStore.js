@@ -44,7 +44,7 @@ export const useAuthStore = defineStore('auth', {
         this.userData = data
         if (!data) {
           const { data: newUser, error: insertError } = await supabase.from('usuarios').upsert({
-            id: this.user.id, email: this.user.email, rol: 'usuario', estado: 'pendiente', fecha_registro: new Date().toISOString()
+            id: this.user.id, email: this.user.email, rol: 'usuario', estado: 'aprobado', fecha_registro: new Date().toISOString()
           }).select().maybeSingle()
           if (insertError) throw insertError
           this.userData = newUser
@@ -73,12 +73,17 @@ export const useAuthStore = defineStore('auth', {
 
     async register(email, password) {
       const toast = useToastStore()
-      const { error } = await supabase.auth.signUp({ email, password })
+      const { data, error } = await supabase.auth.signUp({ email, password })
       if (error) {
         toast.error(error.message)
         return false
       }
-      toast.success('✅ Cuenta creada. Revisá tu email para confirmar.')
+      if (data?.session) {
+        this.user = data.user
+        this.session = data.session
+        await this.loadUserData()
+      }
+      toast.success('✅ Cuenta creada. Ya podés ingresar.')
       return true
     },
 
